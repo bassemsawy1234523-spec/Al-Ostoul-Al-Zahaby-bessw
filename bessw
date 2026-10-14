@@ -1,0 +1,2544 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأسطول الذهبي - النظام الشامل والتقارير</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <!-- html2pdf Library لتصدير ملفات PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #d4af37;
+            --dark: #121212;
+            --light-dark: #1e1e1e;
+            --card-bg: #252525;
+            --text: #ffffff;
+            --gray: #aaaaaa;
+            --success: #28a745;
+            --danger: #dc3545;
+            --info: #17a2b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
+        body { background-color: var(--dark); color: var(--text); padding-bottom: 70px; }
+        header { background: var(--light-dark); padding: 15px; text-align: center; border-bottom: 2px solid var(--primary); font-size: 20px; font-weight: bold; color: var(--primary); }
+        
+        .nav-tabs { display: flex; background: var(--light-dark); overflow-x: auto; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+        .nav-tab { padding: 12px 15px; color: var(--gray); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; font-size: 14px; }
+        .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: bold; }
+
+        .container { padding: 15px; max-width: 850px; margin: auto; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        h2 { font-size: 18px; margin-bottom: 12px; color: var(--primary); border-bottom: 1px solid #444; padding-bottom: 5px; }
+
+        label { display: block; margin-bottom: 5px; font-size: 13px; color: var(--gray); }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: var(--text); border-radius: 5px; font-size: 14px; }
+        button { background: var(--primary); color: #000; border: none; padding: 12px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        button:hover { opacity: 0.9; }
+        
+        .btn-group { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-info { background: var(--info); color: #fff; }
+        .btn-pdf { background: #e74c3c; color: #fff; }
+        .btn-share { background: #8e44ad; color: #fff; }
+        .btn-sm { padding: 5px 8px; font-size: 11px; width: auto; display: inline-block; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { padding: 8px; text-align: right; border-bottom: 1px solid #444; }
+        th { color: var(--primary); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--light-dark); padding: 20px; border-radius: 10px; width: 92%; max-width: 650px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--primary); }
+        .close-modal { float: left; color: var(--danger); cursor: pointer; font-size: 22px; font-weight: bold; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .stat-box { background: #333; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid transparent; }
+        .stat-box:hover { border-color: var(--primary); }
+        .stat-box span { display: block; font-size: 12px; color: var(--gray); }
+        .stat-box strong { font-size: 16px; color: var(--primary); }
+
+        .full-width-stat {
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--primary);
+            margin-bottom: 15px;
+        }
+        .full-width-stat span { display: block; font-size: 13px; color: var(--gray); font-weight: bold; }
+        .full-width-stat strong { font-size: 20px; color: var(--primary); }
+        
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; font-size: 13px; }
+
+        .ticker-wrap {
+            width: 100%;
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: ticker 42s linear 3 forwards;
+            font-size: 12px;
+            color: #aaaaaa;
+        }
+        .ticker-move span {
+            margin-left: 15px;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        @keyframes ticker {
+            0% { transform: translate3d(-100%, 0, 0); }
+            100% { transform: translate3d(100%, 0, 0); }
+        }
+
+        .payment-split-box {
+            background: #222;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border: 1px dashed #444;
+        }
+
+        .calc-box {
+            background: #1a1a1a;
+            padding: 6px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            border: 1px solid #444;
+        }
+        .calc-box input {
+            margin-bottom: 0;
+            background: #111;
+            font-size: 13px;
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .image-gallery img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            border: 1px solid var(--primary);
+        }
+
+        .pdf-template { background: #ffffff !important; color: #000000 !important; padding: 20px; border-radius: 5px; font-family: Tahoma, sans-serif; }
+    </style>
+</head>
+<body>
+
+    <header id="mainHeader">الأسطول الذهبي 🚖</header>
+
+    <div class="nav-tabs" id="mainNavTabs">
+        <div class="nav-tab active" onclick="switchTab('revenues', this)">الإيرادات</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('drivers', this)">السائقين 🔐</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('cars', this)">السيارات 🔐</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('archive', this)">الأرشيف الشهري 🔐</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('debts', this)">الديون 🔐</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('associations', this)">الجمعيات 🔐</div>
+        <div class="nav-tab" onclick="checkPinAndSwitch('treasury', this)">الخزنة 🔐</div>
+    </div>
+
+    <div class="container">
+
+        <!-- واجهة العرض العامة للروابط المشاركة -->
+        <div id="sharedViewSection" class="card" style="display:none; margin-top:20px;">
+            <h2 id="sharedTitle">كشف حساب مخصص</h2>
+            <div id="sharedBody">جاري تحميل البيانات...</div>
+        </div>
+
+        <!-- 1. شاشة تسجيل الإيرادات -->
+        <div id="revenues" class="section active">
+            <div class="card">
+                <h2 id="revFormTitle">تسجيل رحلة / إيراد جديد</h2>
+                <form id="revenueForm" onsubmit="saveRevenue(event)">
+                    <input type="hidden" id="revTripId">
+                    <label>السيارة</label>
+                    <select id="revCar" required><option value="">جاري التحميل...</option></select>
+                    <label>السائق</label>
+                    <select id="revDriver" required><option value="">جاري التحميل...</option></select>
+                    
+                    <!-- آلة حاسبة ومجموع الإيراد الكلي -->
+                    <label style="color: var(--primary); font-weight: bold;">آلة حاسبة للإيراد الكلي (اكتب المبالغ مثل 100+150+50):</label>
+                    <div class="calc-box">
+                        <input type="text" id="calcTotalRev" placeholder="مثال: 150+200+80" oninput="calculateExpression('calcTotalRev', 'totalRev')">
+                    </div>
+                    <label>مجموع الإيراد الكلي النهائي</label>
+                    <input type="number" id="totalRev" step="any" required placeholder="0.00">
+                    
+                    <div class="payment-split-box">
+                        <label style="color:var(--primary); font-weight:bold;">توزيع طريقة الدفع للإيراد (يجب أن يساوي الصافي أو الإجمالي):</label>
+                        <div style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                            <div>
+                                <label>نقدي (كاش)</label>
+                                <input type="number" id="payCash" step="any" value="0">
+                                <label style="font-size:11px;">صور سكرين / إيصال الكاش (اختياري)</label>
+                                <input type="file" id="payCashImg" accept="image/*" multiple>
+                            </div>
+                            <hr style="border-color:#333;">
+                            <div>
+                                <label>فودافون كاش</label>
+                                <input type="number" id="payVodafone" step="any" value="0">
+                                <label style="font-size:11px;">صور سكرين تحويل فودافون كاش (اختياري)</label>
+                                <input type="file" id="payVodafoneImg" accept="image/*" multiple>
+                            </div>
+                            <hr style="border-color:#333;">
+                            <div>
+                                <label>انستا باي</label>
+                                <input type="number" id="payInstapay" step="any" value="0">
+                                <label style="font-size:11px;">صور سكرين تحويل انستا باي (اختياري)</label>
+                                <input type="file" id="payInstapayImg" accept="image/*" multiple>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- آلة حاسبة ومجموع البنزين -->
+                    <label style="color: var(--primary); font-weight: bold;">آلة حاسبة لمجموع البنزين (اكتب المبالغ مثل 50+100):</label>
+                    <div class="calc-box">
+                        <input type="text" id="calcTripFuel" placeholder="مثال: 50+80" oninput="calculateExpression('calcTripFuel', 'tripFuel')">
+                    </div>
+                    <label>مجموع بنزين الرحلة النهائي</label>
+                    <input type="number" id="tripFuel" step="any" value="0" required>
+
+                    <!-- آلة حاسبة ومجموع المصاريف الشخصية -->
+                    <label style="color: var(--primary); font-weight: bold;">آلة حاسبة للمصروف الشخصي (اكتب المبالغ مثل 20+30):</label>
+                    <div class="calc-box">
+                        <input type="text" id="calcPersonalExp" placeholder="مثال: 20+30" oninput="calculateExpression('calcPersonalExp', 'personalExp')">
+                    </div>
+                    <label>مجموع المصاريف الشخصية للسائق النهائي</label>
+                    <input type="number" id="personalExp" step="any" value="0" required>
+
+                    <!-- آلة حاسبة وكرت الطريق -->
+                    <label style="color: var(--primary); font-weight: bold;">آلة حاسبة لكرت الطريق/المطار (اكتب المبالغ مثل 15+25):</label>
+                    <div class="calc-box">
+                        <input type="text" id="calcRoadFee" placeholder="مثال: 15+25" oninput="calculateExpression('calcRoadFee', 'roadFee')">
+                    </div>
+                    <label>إجمالي كرت طريق أو مطار النهائي</label>
+                    <input type="number" id="roadFee" step="any" value="0" required>
+
+                    <!-- آلة حاسبة ومصاريف الأكل -->
+                    <label style="color: var(--primary); font-weight: bold;">آلة حاسبة لمصاريف الأكل (اكتب المبالغ مثل 40+60):</label>
+                    <div class="calc-box">
+                        <input type="text" id="calcFoodExp" placeholder="مثال: 40+60" oninput="calculateExpression('calcFoodExp', 'foodExp')">
+                    </div>
+                    <label>إجمالي مصاريف الأكل النهائي</label>
+                    <input type="number" id="foodExp" step="any" value="0" required>
+
+                    <button type="submit" id="revSubmitBtn" style="margin-top:10px;">حفظ وتوزيع الحسابات تلقائياً</button>
+                    <button type="button" id="revCancelBtn" onclick="resetRevenueForm()" style="background:#555; color:#fff; margin-top:5px; display:none;">إلغاء التعديل</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>سجل حركات ورحلات الإيرادات</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>السيارة / السائق</th>
+                                <th>الإيراد والمصاريف</th>
+                                <th>الصافي ونسبة السائق</th>
+                                <th>صور السكرين</th>
+                                <th>تحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tripsLogTable">
+                            <tr><td colspan="6" style="text-align:center;">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. شاشة السائقين -->
+        <div id="drivers" class="section">
+            <div class="card">
+                <h2 id="driverFormTitle">إضافة سائق جديد</h2>
+                <form id="driverForm" onsubmit="saveOrUpdateDriver(event)">
+                    <input type="hidden" id="dId">
+                    <label>اسم السائق</label>
+                    <input type="text" id="dName" required>
+                    <label>العنوان</label>
+                    <input type="text" id="dAddress" required>
+                    <label>رقم الموبايل</label>
+                    <input type="text" id="dPhone" required>
+                    <label>النسبة المئوية من صافي الرحلة (%)</label>
+                    <input type="number" id="dPercentage" step="any" required placeholder="50">
+                    <label>الرصيد الافتتاحي / التراكمي</label>
+                    <input type="number" id="dOpeningBalance" step="any" value="0" required>
+                    <button type="submit" id="driverSubmitBtn">حفظ السائق</button>
+                    <button type="button" id="driverCancelBtn" onclick="resetDriverForm()" style="background:#555; color:#fff; margin-top:5px; display:none;">إلغاء</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>قائمة السائقين (الدورة الحالية)</h2>
+                <div id="driversList">جاري التحميل...</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('drivers')">تغيير كلمة مرور شاشة السائقين</button>
+            </div>
+        </div>
+
+        <!-- 3. شاشة السيارات -->
+        <div id="cars" class="section">
+            <div class="card">
+                <h2 id="carFormTitle">إضافة سيارة جديدة</h2>
+                <form id="carForm" onsubmit="saveOrUpdateCar(event)">
+                    <input type="hidden" id="cId">
+                    <label>ماركة واسم السيارة والموديل</label>
+                    <input type="text" id="cModel" required placeholder="هيونداي إلنترا 2024">
+                    <label>رقم اللوحة للسيارة</label>
+                    <input type="text" id="cPlateNumber" required placeholder="أ ب ج 1234">
+                    
+                    <label>نوع الحيازة</label>
+                    <select id="cOwnership" onchange="toggleRentFields()" required>
+                        <option value="ملك">ملك</option>
+                        <option value="إيجار">إيجار</option>
+                    </select>
+
+                    <div id="rentFields" style="display:none;">
+                        <label>اسم المالك</label>
+                        <input type="text" id="cOwnerName">
+                        <label>رقم المالك</label>
+                        <input type="text" id="cOwnerPhone">
+                        <label>قيمة الإيجار الشهري</label>
+                        <input type="number" id="cMonthlyRent" step="any">
+                        <label>ميعاد الإيجار الشهري (اليوم)</label>
+                        <input type="number" id="cRentDueDate" placeholder="1">
+                    </div>
+
+                    <label>حساب انستا (Instapay)</label>
+                    <input type="text" id="cInstapay">
+                    <label>رقم فودافون كاش</label>
+                    <input type="text" id="cVodafoneCash">
+                    <label>الرصيد الافتتاحي للسيارة</label>
+                    <input type="number" id="cOpeningBalance" step="any" value="0" required>
+
+                    <button type="submit" id="carSubmitBtn">حفظ السيارة</button>
+                    <button type="button" id="carCancelBtn" onclick="resetCarForm()" style="background:#555; color:#fff; margin-top:5px; display:none;">إلغاء</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>قائمة السيارات (الدورة الحالية من يوم 5)</h2>
+                <div id="carsList">جاري التحميل...</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('cars')">تغيير كلمة مرور شاشة السيارات</button>
+            </div>
+        </div>
+
+        <!-- 4. شاشة الأرشيف الشهري -->
+        <div id="archive" class="section">
+            <div class="card">
+                <h2>الأرشيف الشهري المتقدم للحسابات (من يوم 5 إلى يوم 4)</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label>السنة</label>
+                        <select id="archiveYear" onchange="loadArchiveData()"></select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>دورة الشهر</label>
+                        <select id="archiveMonth" onchange="loadArchiveData()">
+                            <option value="1">يناير (5 يناير - 4 فبراير)</option>
+                            <option value="2">فبراير (5 فبراير - 4 مارس)</option>
+                            <option value="3">مارس (5 مارس - 4 أبريل)</option>
+                            <option value="4">أبريل (5 أبريل - 4 مايو)</option>
+                            <option value="5">مايو (5 مايو - 4 يونيو)</option>
+                            <option value="6">يونيو (5 يونيو - 4 يوليو)</option>
+                            <option value="7">يوليو (5 يوليو - 4 أغسطس)</option>
+                            <option value="8">أغسطس (5 أغسطس - 4 سبتمبر)</option>
+                            <option value="9">سبتمبر (5 سبتمبر - 4 أكتوبر)</option>
+                            <option value="10">أكتوبر (5 أكتوبر - 4 نوفمبر)</option>
+                            <option value="11">نوفمبر (5 نوفمبر - 4 ديسمبر)</option>
+                            <option value="12">ديسمبر (5 ديسمبر - 4 يناير)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-pdf" onclick="exportFullArchivePDF()" style="margin-top: 5px;">تصدير تقرير الشهر الشامل بالكامل (PDF)</button>
+            </div>
+
+            <div id="archivePrintArea">
+                <div class="card">
+                    <h2>أرشيف السائقين لهذه الدورة</h2>
+                    <div id="archiveDriversList">اختر الشهر لعرض البيانات...</div>
+                </div>
+
+                <div class="card">
+                    <h2>أرشيف السيارات لهذه الدورة</h2>
+                    <div id="archiveCarsList">اختر الشهر لعرض البيانات...</div>
+                </div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('archive')">تغيير كلمة مرور شاشة الأرشيف الشهري</button>
+            </div>
+        </div>
+
+        <!-- 5. شاشة الديون -->
+        <div id="debts" class="section">
+            <div class="card">
+                <h2 id="debtFormTitle">تسجيل دين جديد</h2>
+                <form id="debtForm" onsubmit="saveOrUpdateDebt(event)">
+                    <input type="hidden" id="debtId">
+                    <label>نوع الدين</label>
+                    <select id="debtType" onchange="toggleDebtFields()" required>
+                        <option value="ثابت">دين ثابت</option>
+                        <option value="فائدة">دين بفائدة شهرية</option>
+                    </select>
+
+                    <label>اسم الدائن</label>
+                    <input type="text" id="debtName" required placeholder="اسم الشخص أو الجهة">
+
+                    <label>رقم الموبايل</label>
+                    <input type="text" id="debtPhone" required placeholder="رقم الهاتف">
+
+                    <div id="fixedDebtFields">
+                        <label>قيمة الدين الثابت</label>
+                        <input type="number" id="debtAmount" step="any" placeholder="المبلغ الكلي للدين">
+                        <label>ميعاد سداد الدين الثابت (تاريخ كامل)</label>
+                        <input type="date" id="debtFixedDueDate">
+                    </div>
+
+                    <div id="interestDebtFields" style="display:none;">
+                        <label>أصل الدين</label>
+                        <input type="number" id="debtPrincipal" step="any" placeholder="المبلغ الأصلي">
+                        
+                        <label>الفائدة الشهرية</label>
+                        <input type="number" id="debtMonthlyInterest" step="any" placeholder="مبلغ الفائدة الشهرية">
+                        
+                        <label>يوم السداد الشهري (اليوم من كل شهر)</label>
+                        <input type="number" id="debtInterestDueDateDay" placeholder="مثال: 10">
+                    </div>
+
+                    <button type="submit" id="debtSubmitBtn">حفظ الدين</button>
+                    <button type="button" id="debtCancelBtn" onclick="resetDebtForm()" style="background:#555; color:#fff; margin-top:5px; display:none;">إلغاء التعديل</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>قائمة الديون</h2>
+                <div id="debtsList">جاري التحميل...</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('debts')">تغيير كلمة مرور شاشة الديون</button>
+            </div>
+        </div>
+
+        <!-- 6. شاشة الجمعيات -->
+        <div id="associations" class="section">
+            <div class="card">
+                <h2 id="assocFormTitle">تسجيل جمعية جديدة</h2>
+                <form id="assocForm" onsubmit="saveOrUpdateAssociation(event)">
+                    <input type="hidden" id="assocId">
+                    <label>اسم الجمعية / صاحب الجمعية</label>
+                    <input type="text" id="assocName" required placeholder="مثال: جمعية الأصدقاء">
+                    <label>رقم الموبايل</label>
+                    <input type="text" id="assocPhone" required>
+                    <label>إجمالي عدد أدوار الجمعية</label>
+                    <input type="number" id="assocTotalRounds" required placeholder="10">
+                    <label>أدوار القبض الخاصة بنا</label>
+                    <input type="text" id="assocMyRounds" required placeholder="3 و 7">
+                    <label>القسط الشهري للجمعية</label>
+                    <input type="number" id="assocInstallment" step="any" required>
+                    <label>إجمالي مبلغ القبض لكل دور</label>
+                    <input type="number" id="assocPayoutAmount" step="any" required>
+                    <label>ميعاد سداد القسط الشهري (اليوم من الشهر)</label>
+                    <input type="number" id="assocDueDate" required>
+                    
+                    <button type="submit" id="assocSubmitBtn">حفظ الجمعية</button>
+                    <button type="button" id="assocCancelBtn" onclick="resetAssociationForm()" style="background:#555; color:#fff; margin-top:5px; display:none;">إلغاء التعديل</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>قائمة الجمعيات</h2>
+                <div id="associationsList">جاري التحميل...</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('associations')">تغيير كلمة مرور شاشة الجمعيات</button>
+            </div>
+        </div>
+
+        <!-- 7. شاشة الخزنة -->
+        <div id="treasury" class="section">
+            <div class="ticker-wrap">
+                <div class="ticker-move" id="secretTickerContent">
+                    جاري حساب الالتزامات المالية لهذا الشهر...
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span>إجمالي الإيرادات</span>
+                    <strong id="trTotalIncome">0.00</strong>
+                </div>
+                <div class="stat-box">
+                    <span>إجمالي المصاريف / السحب</span>
+                    <strong id="trTotalExpenses">0.00</strong>
+                </div>
+            </div>
+
+            <div class="full-width-stat">
+                <span>إجمالي الرصيد (المتبقي بجميع طرق الدفع)</span>
+                <strong id="trTotalOverallBalance">0.00</strong>
+            </div>
+    <div class="card">
+                <h2>توزيع الخزنة حسب طرق الدفع (اضغط على الطريقة لعرض الحركات والصور)</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
+                    <div class="stat-box" onclick="filterTreasuryByMethod('كاش')">
+                        <span>نقدي (كاش)</span>
+                        <strong id="methodCash">0.00</strong>
+                    </div>
+                    <div class="stat-box" onclick="filterTreasuryByMethod('فودافون كاش')">
+                        <span>فودافون كاش</span>
+                        <strong id="methodVodafone">0.00</strong>
+                    </div>
+                    <div class="stat-box" onclick="filterTreasuryByMethod('انستا باي')">
+                        <span>انستا باي</span>
+                        <strong id="methodInstapay">0.00</strong>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; text-align: center;">
+                    <button class="btn-sm btn-info" onclick="filterTreasuryByMethod('الكل')">إلغاء التصفية وعرض الكل</button>
+                </div>
+            </div>
+
+            <div class="card" style="text-align: center;">
+                <span>الباقي في الخزنة (الرصيد الحالي)</span>
+                <h1 id="trBalance" style="color: var(--primary); margin-top: 5px;">0.00</h1>
+                <div class="btn-group" style="margin-top: 15px;">
+                    <button class="btn-success" onclick="manualTreasuryAction('إيداع')">إيداع للخزنة</button>
+                    <button class="btn-danger" onclick="openWithdrawalModal()">سحب من الخزنة 💸</button>
+                </div>
+            </div>
+            
+            <div class="card" style="text-align: center;">
+                <button class="btn-info" onclick="changePinPrompt('treasury')">تغيير كلمة مرور شاشة الخزنة</button>
+            </div>
+            
+            <div class="card">
+                <h2 id="treasuryLogTitle">سجل حركات الخزنة (الكل)</h2>
+                <table>
+                    <thead>
+                        <tr><th>التاريخ</th><th>النوع</th><th>المبلغ والطريقة</th><th>البيان والجهة</th><th>الصورة</th><th>تحكم</th></tr>
+                    </thead>
+                    <tbody id="treasuryLogTable">
+                        <tr><td colspan="6" style="text-align: center;">لا توجد حركات</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- نافذة منبثقة تفاعلية عامة -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('detailModal')">&times;</span>
+            <h2 id="modalTitle">التفاصيل</h2>
+            <div id="modalBody">جاري التحميل...</div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة لسحب مخصص من الخزنة مع رفع صور الهاتف -->
+    <div id="withdrawModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('withdrawModal')">&times;</span>
+            <h2>سحب مالي من الخزنة</h2>
+            <form onsubmit="executeCustomWithdrawal(event)">
+                <label>جهة السحب (نوع المسحوبات)</label>
+                <select id="wCategory" onchange="toggleWithdrawCategoryFields()" required>
+                    <option value="عام">مصاريف عامة / سحب عادي</option>
+                    <option value="سائق">سحب لحساب سائق (تخصم من مستحقاته)</option>
+                    <option value="سيارة">صيانة / مصاريف سيارة (تضاف لمصاريف السيارة)</option>
+                </select>
+
+                <div id="wDriverGroup" style="display:none;">
+                    <label>اختر السائق</label>
+                    <select id="wDriverId"></select>
+                </div>
+
+                <div id="wCarGroup" style="display:none;">
+                    <label>اختر السيارة</label>
+                    <select id="wCarId"></select>
+                </div>
+
+                <label>المبلغ</label>
+                <input type="number" id="wAmount" step="any" required placeholder="0.00">
+
+                <label>طريقة السحب</label>
+                <select id="wMethod" required>
+                    <option value="كاش">نقدي (كاش)</option>
+                    <option value="فودافون كاش">فودافون كاش</option>
+                    <option value="انستا باي">انستا باي</option>
+                </select>
+
+                <label>البيان / توضيح السبب</label>
+                <input type="text" id="wNote" required placeholder="مثال: غيار زيت، سلفة للسائق...">
+
+                <label>صور الإيصال / سكرين التحويل من الهاتف (اختياري - يمكنك اختيار عدة صور)</label>
+                <input type="file" id="wReceiptImgFile" accept="image/*" multiple>
+
+                <button type="submit" class="btn-danger" style="margin-top:10px;">تأكيد السحب والخصم التلقائي</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة شاملة لمعاملات الديون (سحب / إيداع) مع رفع صور الهاتف -->
+    <div id="debtTransactionModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('debtTransactionModal')">&times;</span>
+            <h2 id="debtModalHeader">تسجيل حركة مالية للدين</h2>
+            <form onsubmit="executeDebtTransactionSubmit(event)">
+                <input type="hidden" id="dtDebtId">
+                <input type="hidden" id="dtDebtIsInterest">
+
+                <label>نوع الحركة المالية</label>
+                <select id="dtActionType" required onchange="toggleDebtDeductTypeVisibility()">
+                    <option value="تسليم (سداد)">تسليم مبلغ (سداد للدائن 💸)</option>
+                    <option value="استلام (إيداع)">استلام مبلغ (إيداع/اقتراض 📥)</option>
+                </select>
+
+                <div id="debtDeductGroup" style="display:none;">
+                    <label>نوع الخصم المالي (خاص بديون الفائدة)</label>
+                    <select id="dtDeductType">
+                        <option value="من المبلغ الشهري">خصم من مبلغ القسط/الفائدة الشهرية</option>
+                        <option value="من أصل المبلغ">خصم من أصل مبلغ الدين الكلي</option>
+                    </select>
+                </div>
+
+                <label>المبلغ</label>
+                <input type="number" id="dtAmount" step="any" required placeholder="0.00">
+
+                <label>طريقة الدفع</label>
+                <select id="dtMethod" required>
+                    <option value="كاش">نقدي (كاش)</option>
+                    <option value="فودافون كاش">فودافون كاش</option>
+                    <option value="انستا باي">انستا باي</option>
+                </select>
+
+                <label>البيان / توضيح الحركة</label>
+                <input type="text" id="dtNote" required placeholder="مثال: سداد القسط الشهري، تسليم جزء من الدين...">
+
+                <label>صور الإيصال / سكرين التحويل من الهاتف (اختياري - يمكنك اختيار عدة صور)</label>
+                <input type="file" id="dtReceiptImgFile" accept="image/*" multiple>
+
+                <button type="submit" class="btn-success" id="dtSubmitBtn" style="margin-top:10px;">تأكيد وتنفيذ الحركة المالية</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://fleetsmart-2513b-default-rtdb.firebaseio.com"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const defaultPin = "6352";
+
+        let carsMap = {};
+        let driversMap = {};
+        let currentTreasuryFilter = 'الكل';
+
+        function calculateExpression(calcInputId, targetInputId) {
+            const expr = document.getElementById(calcInputId).value;
+            if (!expr) {
+                document.getElementById(targetInputId).value = 0;
+                return;
+            }
+            try {
+                // حماية وتقييم المجموع الحسابي تلقائياً
+                const sanitizedExpr = expr.replace(/[^0-9+.-]/g, '');
+                if (sanitizedExpr) {
+                    const result = Function('"use strict";return (' + sanitizedExpr + ')')();
+                    document.getElementById(targetInputId).value = isNaN(result) ? 0 : result;
+                }
+            } catch (err) {
+                // في حالة وجود صيغة غير مكتملة يتجاهل الخطأ المؤقت
+            }
+        }
+
+        function getCycleRange(year, month) {
+            let start = new Date(year, month - 1, 5, 0, 0, 0);
+            let end = new Date(year, month, 4, 23, 59, 59);
+            return { start, end };
+        }
+
+        function getCurrentCycle() {
+            let now = new Date();
+            let day = now.getDate();
+            let year = now.getFullYear();
+            let month = now.getMonth() + 1;
+            
+            if (day < 5) {
+                month--;
+                if (month === 0) {
+                    month = 12;
+                    year--;
+                }
+            }
+            return { year, month };
+        }
+
+        function checkPinAndSwitch(tabId, element) {
+            db.ref(`settings/pins/${tabId}`).once('value').then(snapshot => {
+                let currentPin = snapshot.exists() ? snapshot.val() : defaultPin;
+                let enteredPin = prompt("أدخل الرقم السري للوصول لـ " + element.innerText + ":");
+                if (enteredPin === currentPin) {
+                    switchTab(tabId, element);
+                } else if (enteredPin !== null) {
+                    alert("الرقم السري غير صحيح!");
+                }
+            }).catch(() => {
+                let enteredPin = prompt("أدخل الرقم السري للوصول لهذه الشاشة:");
+                if (enteredPin === defaultPin) switchTab(tabId, element);
+                else if (enteredPin !== null) alert("الرقم السري غير صحيح!");
+            });
+        }
+
+        function changePinPrompt(sectionKey) {
+            let entered = prompt("أدخل الرقم السري الحالي:");
+            db.ref(`settings/pins/${sectionKey}`).once('value').then(snapshot => {
+                let currentPin = snapshot.exists() ? snapshot.val() : defaultPin;
+                if (entered === currentPin) {
+                    let newPin = prompt("أدخل الرقم السري الجديد:");
+                    if (newPin) {
+                        db.ref(`settings/pins/${sectionKey}`).set(newPin).then(() => {
+                            alert("تم تغيير الرقم السري بنجاح!");
+                        });
+                    }
+                } else if (entered !== null) {
+                    alert("الرقم السري غير صحيح!");
+                }
+            });
+        }
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(element) element.classList.add('active');
+
+            if (tabId === 'treasury') {
+                updateSecretTickerData();
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function toggleRentFields() {
+            const val = document.getElementById('cOwnership').value;
+            document.getElementById('rentFields').style.display = (val === 'إيجار') ? 'block' : 'none';
+        }
+
+        function toggleDebtFields() {
+            const type = document.getElementById('debtType').value;
+            if (type === 'ثابت') {
+                document.getElementById('fixedDebtFields').style.display = 'block';
+                document.getElementById('interestDebtFields').style.display = 'none';
+            } else {
+                document.getElementById('fixedDebtFields').style.display = 'none';
+                document.getElementById('interestDebtFields').style.display = 'block';
+            }
+        }
+
+        function generateShareLink(type, id) {
+            let baseUrl = window.location.href.split('?')[0];
+            let shareUrl = `${baseUrl}?type=${type}&id=${id}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert(`تم نسخ رابط كشف الحساب المخصص بنجاح:\n${shareUrl}`);
+            }).catch(() => {
+                prompt("انسخ رابط المشاركة المخصص التالي:", shareUrl);
+            });
+        }
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareType = urlParams.get('type');
+            const shareId = urlParams.get('id');
+
+            if (shareType && shareId) {
+                document.getElementById('mainHeader').innerText = "الأسطول الذهبي - كشف حساب مخصص 🚖";
+                document.getElementById('mainNavTabs').style.display = 'none';
+                document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+                document.getElementById('sharedViewSection').style.display = 'block';
+                loadSharedAccountView(shareType, shareId);
+            } else {
+                initArchiveYearDropdown();
+                loadDropdowns();
+                loadDriversList();
+                loadCarsList();
+                loadDebtsList();
+                loadAssociationsList();
+                loadTreasuryData();
+                loadTripsLogTable();
+                updateSecretTickerData();
+            }
+        };
+
+        function loadSharedAccountView(type, id) {
+            if (type === 'driver') {
+                db.ref(`drivers/${id}`).once('value', drvSnap => {
+                    if (!drvSnap.exists()) { document.getElementById('sharedBody').innerHTML = 'عذراً، هذا الحساب غير موجود'; return; }
+                    let drv = drvSnap.val();
+                    document.getElementById('sharedTitle').innerText = `كشف حساب السائق: ${drv.name}`;
+                    db.ref('trips').orderByChild('driverId').equalTo(id).once('value', tripsSnap => {
+                        let totalNetJob = 0; let totalShare = 0;
+                        let html = '<table><thead><tr><th>التاريخ</th><th>صافي شغل الرحلة</th><th>المستحق لك</th></tr></thead><tbody>';
+                        if (tripsSnap.exists()) {
+                            tripsSnap.forEach(c => {
+                                let t = c.val();
+                                let tripNet = Number(t.netRevenue || (t.totalRev - t.totalExpenses) || 0);
+                                totalNetJob += tripNet;
+                                totalShare += Number(t.driverShare || 0);
+                                html += `<tr><td>${t.timestamp}</td><td>${tripNet} ج.م</td><td style="color:var(--primary); font-weight:bold;">${t.driverShare} ج.م</td></tr>`;
+                            });
+                        } else {
+                            html += '<tr><td colspan="3" style="text-align:center;">لا توجد رحلات سابقة</td></tr>';
+                        }
+                        
+                        let cumulativeBalance = Number(drv.balance !== undefined ? drv.balance : (drv.openingBalance || 0));
+                        html += `</tbody></table>
+                            <hr style="border-color:#444; margin:15px 0;">
+                            <div class="detail-row"><span>إجمالي شغل السائق (بعد خصم المصاريف):</span> <strong>${totalNetJob} ج.م</strong></div>
+                            <div class="detail-row"><span>إجمالي مستحقات الشغل الصافية:</span> <strong style="color:var(--primary);">${totalShare} ج.م</strong></div>
+                            <div class="detail-row"><span>الرصيد التراكمي المتبقي لك/عليك:</span> <strong style="color:${cumulativeBalance >= 0 ? 'var(--success)' : 'var(--danger)'}; font-size:16px;">${cumulativeBalance} ج.م</strong></div>
+                        `;
+                        document.getElementById('sharedBody').innerHTML = html;
+                    });
+                });
+            } else if (type === 'debt') {
+                db.ref(`debts/${id}`).once('value', debtSnap => {
+                    if (!debtSnap.exists()) { document.getElementById('sharedBody').innerHTML = 'عذراً، هذا الحساب غير موجود'; return; }
+                    let d = debtSnap.val();
+                    document.getElementById('sharedTitle').innerText = `كشف حساب الدين: ${d.name}`;
+                    let remaining = (d.amount || 0) - (d.paidAmount || 0);
+                    db.ref('debt_transactions').orderByChild('debtId').equalTo(id).once('value', transSnap => {
+                        let html = '<table><thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th><th>البيان</th></tr></thead><tbody>';
+                        if (transSnap.exists()) {
+                            transSnap.forEach(p => {
+                                let tr = p.val();
+                                let color = tr.actionType === 'تسليم (سداد)' ? 'var(--danger)' : 'var(--success)';
+                                html += `<tr><td>${tr.timestamp}</td><td style="color:${color}; font-weight:bold;">${tr.actionType}</td><td>${tr.amount} ج.م</td><td>${tr.method || 'كاش'}</td><td>${tr.note || '-'}</td></tr>`;
+                            });
+                        } else {
+                            html += '<tr><td colspan="5" style="text-align:center;">لا توجد حركات سابقة</td></tr>';
+                        }
+                        html += `</tbody></table>
+                            <hr style="border-color:#444; margin:15px 0;">
+                            ${d.type === 'فائدة' ? `
+                                <div class="detail-row"><span>أصل الدين:</span> <strong>${d.principal} ج.م</strong></div>
+                                <div class="detail-row"><span>الفائدة الشهرية:</span> <strong style="color:var(--primary);">${d.monthlyInterest} ج.م</strong></div>
+                            ` : `
+                                <div class="detail-row"><span>المبلغ الأصلي:</span> <strong>${d.amount || 0} ج.م</strong></div>
+                                <div class="detail-row"><span>المسدد:</span> <strong style="color:var(--success);">${d.paidAmount || 0} ج.م</strong></div>
+                                <div class="detail-row"><span>المتبقي:</span> <strong style="color:var(--danger);">${remaining} ج.م</strong></div>
+                            `}
+                        `;
+                        document.getElementById('sharedBody').innerHTML = html;
+                    });
+                });
+            } else if (type === 'car') {
+                db.ref(`cars/${id}`).once('value', carSnap => {
+                    if (!carSnap.exists()) { document.getElementById('sharedBody').innerHTML = 'عذراً، هذه السيارة غير موجودة'; return; }
+                    let c = carSnap.val();
+                    document.getElementById('sharedTitle').innerText = `كشف حساب السيارة: ${c.model}`;
+                    
+                    let curr = getCurrentCycle();
+                    let cycle = getCycleRange(curr.year, curr.month);
+
+                    db.ref('trips').orderByChild('carId').equalTo(id).once('value', tripsSnap => {
+                        let totalJob = 0; let totalExpenses = 0; let totalDriverShares = 0;
+                        tripsSnap.forEach(child => {
+                            let t = child.val();
+                            let tripDate = t.isoDate ? new Date(t.isoDate) : new Date();
+                            if (tripDate >= cycle.start && tripDate <= cycle.end) {
+                                totalJob += Number(t.totalRev || 0);
+                                totalExpenses += Number(t.totalExpenses || 0);
+                                totalDriverShares += Number(t.driverShare || 0);
+                            }
+                        });
+
+                        db.ref('car_expenses').orderByChild('carId').equalTo(id).once('value', expSnap => {
+                            let extraMaint = 0;
+                            if (expSnap.exists()) {
+                                expSnap.forEach(e => {
+                                    let ex = e.val();
+                                    let exDate = ex.isoDate ? new Date(ex.isoDate) : new Date();
+                                    if (exDate >= cycle.start && exDate <= cycle.end) {
+                                        extraMaint += Number(ex.amount || 0);
+                                    }
+                                });
+                            }
+
+                            let grandTotalCarExpenses = totalExpenses + totalDriverShares + extraMaint;
+                            let netProfit = (c.openingBalance || 0) + totalJob - grandTotalCarExpenses - (c.ownership === 'إيجار' ? Number(c.monthlyRent || 0) : 0);
+
+                            let html = `
+                                <div class="detail-row"><span>الموديل:</span> <strong>${c.model} (${c.plateNumber || ''})</strong></div>
+                                <div class="detail-row"><span>إجمالي شغل الدورة:</span> <strong>${totalJob} ج.م</strong></div>
+                                <div class="detail-row"><span>مصاريف التشغيل + الصيانة:</span> <strong>${totalExpenses + extraMaint} ج.م</strong></div>
+                                <div class="detail-row"><span>إجمالي نسب السائقين:</span> <strong>${totalDriverShares} ج.م</strong></div>
+                                <div class="detail-row"><span>إجمالي المصاريف الشاملة:</span> <strong style="color:var(--danger);">${grandTotalCarExpenses} ج.م</strong></div>
+                                <div class="detail-row"><span>صافي ربح السيارة الحالي:</span> <strong style="color:var(--primary); font-size:16px;">${netProfit} ج.م</strong></div>
+                            `;
+                            document.getElementById('sharedBody').innerHTML = html;
+                        });
+                    });
+                });
+            } else if (type === 'assoc') {
+                db.ref(`associations/${id}`).once('value', assocSnap => {
+                    if (!assocSnap.exists()) { document.getElementById('sharedBody').innerHTML = 'عذراً، الجمعية غير موجودة'; return; }
+                    let a = assocSnap.val();
+                    document.getElementById('sharedTitle').innerText = `كشف حساب جمعية: ${a.name}`;
+                    let paidCount = a.paidRoundsCount || 0;
+                    let remainingRounds = a.totalRounds - paidCount;
+                    let totalPaidMoney = paidCount * a.installment;
+                    let html = `
+                        <div class="detail-row"><span>الجمعية / الموبايل:</span> <strong>${a.name} (${a.phone})</strong></div>
+                        <div class="detail-row"><span>الأدوار المدفوعة:</span> <strong style="color:var(--success);">${paidCount} دور (${totalPaidMoney} ج.م)</strong></div>
+                        <div class="detail-row"><span>الأدوار المتبقية:</span> <strong style="color:var(--danger);">${remainingRounds} دور</strong></div>
+                    `;
+                    document.getElementById('sharedBody').innerHTML = html;
+                });
+            }
+        }
+
+        function initArchiveYearDropdown() {
+            let select = document.getElementById('archiveYear');
+            let currentYear = new Date().getFullYear();
+            select.innerHTML = '';
+            for (let y = currentYear; y >= currentYear - 3; y--) {
+                select.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+            let curr = getCurrentCycle();
+            document.getElementById('archiveMonth').value = curr.month;
+        }
+
+        function loadDropdowns() {
+            db.ref('cars').on('value', snapshot => {
+                let carSelect = document.getElementById('revCar');
+                let wCarSelect = document.getElementById('wCarId');
+                carSelect.innerHTML = '<option value="">اختر السيارة</option>';
+                wCarSelect.innerHTML = '<option value="">اختر السيارة</option>';
+                carsMap = {};
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let car = child.val();
+                        carsMap[child.key] = car.model;
+                        let option = `<option value="${child.key}">${car.model} (${car.plateNumber || ''})</option>`;
+                        carSelect.innerHTML += option;
+                        wCarSelect.innerHTML += option;
+                    });
+                }
+            });
+
+            db.ref('drivers').on('value', snapshot => {
+                let driverSelect = document.getElementById('revDriver');
+                let wDriverSelect = document.getElementById('wDriverId');
+                driverSelect.innerHTML = '<option value="">اختر السائق</option>';
+                wDriverSelect.innerHTML = '<option value="">اختر السائق</option>';
+                driversMap = {};
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let drv = child.val();
+                        driversMap[child.key] = drv.name;
+                        let option = `<option value="${child.key}">${drv.name} (${drv.percentage}%)</option>`;
+                        driverSelect.innerHTML += option;
+                        wDriverSelect.innerHTML += option;
+                    });
+                }
+            });
+        }
+
+        function updateSecretTickerData() {
+            let totalDebtsThisMonth = 0;
+            let totalCarRentThisMonth = 0;
+            let totalAssocThisMonth = 0;
+            let currentTreasuryBalance = 0;
+
+            let now = new Date();
+            let currentYear = now.getFullYear();
+            let currentMonth = now.getMonth() + 1;
+
+            db.ref('treasury_logs').once('value', tSnap => {
+                let inc = 0; let exp = 0;
+                tSnap.forEach(c => {
+                    let log = c.val();
+                    if (log.type === 'إيداع') inc += Number(log.amount);
+                    else exp += Number(log.amount);
+                });
+                currentTreasuryBalance = inc - exp;
+
+                db.ref('debts').once('value', debtSnap => {
+                    debtSnap.forEach(c => {
+                        let d = c.val();
+                        if (d.type === 'فائدة') {
+                            totalDebtsThisMonth += Number(d.monthlyInterest || 0);
+                        } else {
+                            let rem = (Number(d.amount) || 0) - (Number(d.paidAmount) || 0);
+                            if (rem > 0 && d.dueDate) {
+                                let dueDateObj = new Date(d.dueDate);
+                                if (!isNaN(dueDateObj) && dueDateObj.getFullYear() == currentYear && (dueDateObj.getMonth() + 1) == currentMonth) {
+                                    totalDebtsThisMonth += rem;
+                                }
+                            }
+                        }
+                    });
+
+                    db.ref('associations').once('value', assocSnap => {
+                        assocSnap.forEach(c => {
+                            let a = c.val();
+                            if ((a.paidRoundsCount || 0) < (a.totalRounds || 0)) {
+                                totalAssocThisMonth += Number(a.installment || 0);
+                            }
+                        });
+
+                        db.ref('cars').once('value', carSnap => {
+                            carSnap.forEach(c => {
+                                let car = c.val();
+                                if (car.ownership === 'إيجار') {
+                                    totalCarRentThisMonth += Number(car.monthlyRent || 0);
+                                }
+                            });
+
+                            let totalRequired = totalDebtsThisMonth + totalCarRentThisMonth + totalAssocThisMonth;
+                            let remainingAfterCoverage = currentTreasuryBalance - totalRequired;
+
+                            let tickerText = `
+                                📌 [مستحقات هذا الشهر] 
+                                مستحقات الديون هذا الشهر: <span>${totalDebtsThisMonth} ج.م</span> | 
+                                مجموع الإيجارات: <span>${totalCarRentThisMonth} ج.م</span> | 
+                                مستحق الجمعيات: <span>${totalAssocThisMonth} ج.م</span> | 
+                                اجمالي المستحق: <span>${totalRequired} ج.م</span> | 
+                                الباقي (في الخزنة بعد التغطية): <span style="color:${remainingAfterCoverage >= 0 ? '#28a745' : '#dc3545'};">${remainingAfterCoverage} ج.م</span>
+                            `;
+                            
+                            let el = document.getElementById('secretTickerContent');
+                            if(el) {
+                                el.innerHTML = tickerText;
+                                el.style.animation = 'none';
+                                el.offsetHeight;
+                                el.style.animation = 'ticker 42s linear 3 forwards';
+                            }
+                        });
+                    });
+                });
+            });
+        }
+
+        function filesToMultipleBase64(fileInputId) {
+            return new Promise((resolve) => {
+                const fileInput = document.getElementById(fileInputId);
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    resolve([]);
+                    return;
+                }
+                const files = Array.from(fileInput.files);
+                const promises = files.map(file => {
+                    return new Promise((res) => {
+                        const reader = new FileReader();
+                        reader.onload = e => res(e.target.result);
+                        reader.onerror = () => res(null);
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                Promise.all(promises).then(results => {
+                    resolve(results.filter(img => img !== null));
+                });
+            });
+        }
+
+        function showMultipleImageViewer(images) {
+            let imgList = [];
+            if (Array.isArray(images)) {
+                imgList = images;
+            } else if (typeof images === 'string') {
+                imgList = [images];
+            }
+
+            if (imgList.length === 0) return;
+
+            document.getElementById('modalTitle').innerText = `صور إيصالات التحويل السكرين (${imgList.length})`;
+            let html = '<div class="image-gallery">';
+            imgList.forEach((src, idx) => {
+                html += `<div style="text-align:center;"><img src="${src}"><p style="color:var(--gray); font-size:11px; margin-top:3px;">صورة ${idx + 1}</p></div>`;
+            });
+            html += '</div>';
+
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        // --- الإيرادات وحسابات الرحلات ---
+        async function saveRevenue(e) {
+            e.preventDefault();
+            const tripId = document.getElementById('revTripId').value;
+            const carId = document.getElementById('revCar').value;
+            const driverId = document.getElementById('revDriver').value;
+            const totalRev = Number(document.getElementById('totalRev').value);
+            
+            const payCash = Number(document.getElementById('payCash').value || 0);
+            const payVodafone = Number(document.getElementById('payVodafone').value || 0);
+            const payInstapay = Number(document.getElementById('payInstapay').value || 0);
+
+            const tripFuel = Number(document.getElementById('tripFuel').value);
+            const personalExp = Number(document.getElementById('personalExp').value);
+            const roadFee = Number(document.getElementById('roadFee').value);
+            const foodExp = Number(document.getElementById('foodExp').value);
+
+            const totalExpenses = tripFuel + personalExp + roadFee + foodExp;
+            const netRevenue = totalRev - totalExpenses;
+            const totalSplit = payCash + payVodafone + payInstapay;
+
+            if (totalSplit !== netRevenue && totalSplit !== totalRev && totalSplit > 0) {
+                if (!confirm(`مجموع طرق الدفع الموزعة (${totalSplit} ج.م) لا يساوي الصافي (${netRevenue} ج.م) ولا الإجمالي (${totalRev} ج.م).\nهل تريد المتابعة على أية حال؟`)) {
+                    return;
+                }
+            }
+
+            // رفع الصور الخاصة بكل طريقة دفع بشكل منفصل
+            let cashImgs = await filesToMultipleBase64('payCashImg');
+            let vodafoneImgs = await filesToMultipleBase64('payVodafoneImg');
+            let instapayImgs = await filesToMultipleBase64('payInstapayImg');
+
+            let allReceiptImages = [...cashImgs, ...vodafoneImgs, ...instapayImgs];
+
+            db.ref(`drivers/${driverId}`).once('value', async driverSnap => {
+                let driver = driverSnap.val();
+                
+                let driverShare = netRevenue * ((driver.percentage || 0) / 100);
+                let carShare = netRevenue - driverShare;
+                
+                let now = new Date();
+                let isoDate = now.toISOString();
+                let timestamp = now.toLocaleString('ar-EG');
+
+                if (tripId) {
+                    db.ref(`trips/${tripId}`).once('value', oldTripSnap => {
+                        if (oldTripSnap.exists()) {
+                            let oldT = oldTripSnap.val();
+                            let updates = {};
+
+                            let finalImages = allReceiptImages.length > 0 ? allReceiptImages : (oldT.receiptImages || []);
+
+                            updates[`drivers/${oldT.driverId}/balance`] = firebase.database.ServerValue.increment(-oldT.driverShare);
+                            updates[`cars/${oldT.carId}/totalEarnings`] = firebase.database.ServerValue.increment(-oldT.carShare);
+                            
+                            if (oldT.treasuryLogId) {
+                                updates[`treasury_logs/${oldT.treasuryLogId}`] = {
+                                    isoDate, timestamp, type: 'إيداع', amount: netRevenue, note: 'تعديل إيراد رحلة',
+                                    method: payCash > 0 ? 'كاش' : (payVodafone > 0 ? 'فودافون كاش' : 'انستا باي'),
+                                    receiptImages: finalImages
+                                };
+                            }
+
+                            updates[`trips/${tripId}`] = { 
+                                isoDate: oldT.isoDate || isoDate, 
+                                timestamp: oldT.timestamp || timestamp, 
+                                carId, driverId, totalRev, totalExpenses, netRevenue, driverShare, carShare,
+                                tripFuel, personalExp, roadFee, foodExp,
+                                payCash, payVodafone, payInstapay,
+                                receiptImages: finalImages,
+                                treasuryLogId: oldT.treasuryLogId || null
+                            };
+
+                            updates[`drivers/${driverId}/balance`] = firebase.database.ServerValue.increment(driverShare);
+                            updates[`cars/${carId}/totalEarnings`] = firebase.database.ServerValue.increment(carShare);
+
+                            db.ref().update(updates).then(() => {
+                                alert('تم تعديل الرحلة وتحديث الحسابات بنجاح!');
+                                resetRevenueForm();
+                                updateSecretTickerData();
+                            });
+                        }
+                    });
+                } else {
+                    let updates = {};
+                    let newTripRef = db.ref('trips').push().key;
+                    let treasuryRef = db.ref('treasury_logs').push().key;
+
+                    updates[`trips/${newTripRef}`] = { 
+                        isoDate, timestamp, carId, driverId, totalRev, totalExpenses, netRevenue, driverShare, carShare,
+                        tripFuel, personalExp, roadFee, foodExp, 
+                        payCash, payVodafone, payInstapay,
+                        receiptImages: allReceiptImages, treasuryLogId: treasuryRef
+                    };
+                    updates[`drivers/${driverId}/balance`] = firebase.database.ServerValue.increment(driverShare);
+                    updates[`cars/${carId}/totalEarnings`] = firebase.database.ServerValue.increment(carShare);
+                    
+                    let mainMethod = 'كاش';
+                    if (payVodafone > payCash && payVodafone >= payInstapay) mainMethod = 'فودافون كاش';
+                    else if (payInstapay > payCash && payInstapay > payVodafone) mainMethod = 'انستا باي';
+
+                    updates[`treasury_logs/${treasuryRef}`] = { 
+                        isoDate, timestamp, type: 'إيداع', amount: netRevenue, 
+                        method: mainMethod, note: `إيراد رحلة (كاش: ${payCash}, فودافون: ${payVodafone}, انستا: ${payInstapay})`,
+                        receiptImages: allReceiptImages 
+                    };
+
+                    db.ref().update(updates).then(() => {
+                        alert('تم الحفظ وتوزيع الحسابات وتحديث الخزنة بنجاح!');
+                        resetRevenueForm();
+                        updateSecretTickerData();
+                    });
+                }
+            });
+        }
+
+        function loadTripsLogTable() {
+            db.ref('trips').on('value', snapshot => {
+                let html = '';
+                if (!snapshot.exists()) {
+                    html = '<tr><td colspan="6" style="text-align:center;">لا توجد رحلات مسجلة</td></tr>';
+                } else {
+                    snapshot.forEach(child => {
+                        let t = child.val();
+                        let key = child.key;
+                        let carName = carsMap[t.carId] || 'سيارة';
+                        let driverName = driversMap[t.driverId] || 'سائق';
+                        
+                        let images = t.receiptImages || (t.receiptImg ? [t.receiptImg] : []);
+                        let imgBtn = images.length > 0 ? `<button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})'>عرض الصور (${images.length}) 🖼️</button>` : '-';
+
+                        html = `<tr>
+                            <td>${t.timestamp || '-'}</td>
+                            <td><b>${carName}</b><br><small style="color:var(--gray)">${driverName}</small></td>
+                            <td>الإجمالي: ${t.totalRev} ج.م<br><small style="color:var(--danger)">المصاريف: ${t.totalExpenses || 0} ج.م</small></td>
+                            <td style="color:var(--success);">الصافي: ${t.netRevenue} ج.م<br><small style="color:var(--primary)">مستحق السائق: ${t.driverShare || 0} ج.م</small></td>
+                            <td>${imgBtn}</td>
+                            <td>
+                                <button class="btn-info btn-sm" onclick="editTrip('${key}')">تعديل ✏️</button>
+                                <button class="btn-danger btn-sm" onclick="deleteTrip('${key}')">حذف 🗑️</button>
+                            </td>
+                        </tr>` + html;
+                    });
+                }
+                document.getElementById('tripsLogTable').innerHTML = html;
+            });
+        }
+
+        function editTrip(tripId) {
+            db.ref(`trips/${tripId}`).once('value').then(snapshot => {
+                if (!snapshot.exists()) return;
+                let t = snapshot.val();
+                document.getElementById('revTripId').value = tripId;
+                document.getElementById('revCar').value = t.carId;
+                document.getElementById('revDriver').value = t.driverId;
+                document.getElementById('totalRev').value = t.totalRev;
+                document.getElementById('payCash').value = t.payCash || 0;
+                document.getElementById('payVodafone').value = t.payVodafone || 0;
+                document.getElementById('payInstapay').value = t.payInstapay || 0;
+                document.getElementById('tripFuel').value = t.tripFuel || 0;
+                document.getElementById('personalExp').value = t.personalExp || 0;
+                document.getElementById('roadFee').value = t.roadFee || 0;
+                document.getElementById('foodExp').value = t.foodExp || 0;
+
+                document.getElementById('revFormTitle').innerText = 'تعديل بيانات الرحلة';
+                document.getElementById('revSubmitBtn').innerText = 'تحديث الرحلة والتأثير المالي';
+                document.getElementById('revCancelBtn').style.display = 'block';
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
+        }
+
+        function resetRevenueForm() {
+            document.getElementById('revenueForm').reset();
+            document.getElementById('revTripId').value = '';
+            document.getElementById('calcTotalRev').value = '';
+            document.getElementById('calcTripFuel').value = '';
+            document.getElementById('calcPersonalExp').value = '';
+            document.getElementById('calcRoadFee').value = '';
+            document.getElementById('calcFoodExp').value = '';
+            document.getElementById('revFormTitle').innerText = 'تسجيل رحلة / إيراد جديد';
+            document.getElementById('revSubmitBtn').innerText = 'حفظ وتوزيع الحسابات تلقائياً';
+            document.getElementById('revCancelBtn').style.display = 'none';
+        }
+
+        function deleteTrip(tripId) {
+            if (!confirm('هل أنت متأكد من حذف هذه الرحلة؟ سيتم إلغاء أثرها المالي نهائياً من حساب السائق والسيارة والخزنة.')) return;
+
+            db.ref(`trips/${tripId}`).once('value').then(snapshot => {
+                if (!snapshot.exists()) return;
+                let t = snapshot.val();
+                let updates = {};
+
+                updates[`trips/${tripId}`] = null;
+                updates[`drivers/${t.driverId}/balance`] = firebase.database.ServerValue.increment(-t.driverShare);
+                updates[`cars/${t.carId}/totalEarnings`] = firebase.database.ServerValue.increment(-t.carShare);
+
+                if (t.treasuryLogId) {
+                    updates[`treasury_logs/${t.treasuryLogId}`] = null;
+                    db.ref().update(updates).then(() => {
+                        alert('تم حذف الرحلة وإلغاء إيرادها من الخزنة بنجاح!');
+                        updateSecretTickerData();
+                    });
+                } else {
+                    db.ref('treasury_logs').once('value').then(tSnap => {
+                        if (tSnap.exists()) {
+                            tSnap.forEach(child => {
+                                let log = child.val();
+                                if (log.type === 'إيداع' && Number(log.amount) === Number(t.netRevenue)) {
+                                    updates[`treasury_logs/${child.key}`] = null;
+                                }
+                            });
+                        }
+                        db.ref().update(updates).then(() => {
+                            alert('تم حذف الرحلة وتطهير إيرادها المتبقي من الخزنة بنجاح!');
+                            updateSecretTickerData();
+                        });
+                    });
+                }
+            });
+        }
+
+        // --- السائقين ---
+        function saveOrUpdateDriver(e) {
+            e.preventDefault();
+            const id = document.getElementById('dId').value;
+            const data = {
+                name: document.getElementById('dName').value,
+                address: document.getElementById('dAddress').value,
+                phone: document.getElementById('dPhone').value,
+                percentage: Number(document.getElementById('dPercentage').value),
+                openingBalance: Number(document.getElementById('dOpeningBalance').value)
+            };
+            if (id) {
+                db.ref(`drivers/${id}`).update(data).then(() => { alert('تم التعديل بنجاح'); resetDriverForm(); });
+            } else {
+                data.balance = data.openingBalance;
+                db.ref('drivers').push(data).then(() => { alert('تم الحفظ بنجاح'); resetDriverForm(); });
+            }
+        }
+        function editDriver(id, name, address, phone, percentage, openingBalance) {
+            document.getElementById('dId').value = id;
+            document.getElementById('dName').value = name;
+            document.getElementById('dAddress').value = address;
+            document.getElementById('dPhone').value = phone;
+            document.getElementById('dPercentage').value = percentage;
+            document.getElementById('dOpeningBalance').value = openingBalance || 0;
+            document.getElementById('driverFormTitle').innerText = 'تعديل السائق';
+            document.getElementById('driverSubmitBtn').innerText = 'تحديث';
+            document.getElementById('driverCancelBtn').style.display = 'block';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+        function resetDriverForm() {
+            document.getElementById('driverForm').reset();
+            document.getElementById('dId').value = '';
+            document.getElementById('driverFormTitle').innerText = 'إضافة سائق جديد';
+            document.getElementById('driverSubmitBtn').innerText = 'حفظ السائق';
+            document.getElementById('driverCancelBtn').style.display = 'none';
+        }
+        function deleteDriver(id) {
+            if (confirm('هل أنت متأكد من الحذف؟')) db.ref(`drivers/${id}`).remove().then(() => alert('تم الحذف'));
+        }
+        
+        function loadDriversList() {
+            db.ref('drivers').on('value', snapshot => {
+                let html = '<table><tr><th>الاسم</th><th>الموبايل</th><th>النسبة</th><th>الرصيد التراكمي (له / عليه)</th><th>تحكم</th></tr>';
+                if (!snapshot.exists()) {
+                    html += '<tr><td colspan="5" style="text-align:center;">لا توجد بيانات</td></tr>';
+                } else {
+                    snapshot.forEach(child => {
+                        let d = child.val(); let id = child.key;
+                        let bal = Number(d.balance !== undefined ? d.balance : (d.openingBalance || 0));
+                        let balColor = bal >= 0 ? 'var(--success)' : 'var(--danger)';
+                        html += `<tr>
+                            <td onclick="openDriverDetails('${id}', '${d.name}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${d.name}</td>
+                            <td>${d.phone}</td>
+                            <td>${d.percentage}%</td>
+                            <td style="color:${balColor}; font-weight:bold;">${bal} ج.م</td>
+                            <td>
+                                <button class="btn-share btn-sm" onclick="generateShareLink('driver', '${id}')">مشاركة 🔗</button>
+                                <button class="btn-info btn-sm" onclick="editDriver('${id}', '${d.name}', '${d.address}', '${d.phone}', ${d.percentage}, ${d.openingBalance || 0})">تعديل</button>
+                                <button class="btn-danger btn-sm" onclick="deleteDriver('${id}')">حذف</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                html += '</table>';
+                document.getElementById('driversList').innerHTML = html;
+            });
+        }
+
+        function openDriverDetails(driverId, driverName) {
+            document.getElementById('modalTitle').innerText = `كشف حساب السائق: ${driverName}`;
+            document.getElementById('detailModal').style.display = 'flex';
+            
+            let curr = getCurrentCycle();
+            let cycle = getCycleRange(curr.year, curr.month);
+
+            db.ref('trips').orderByChild('driverId').equalTo(driverId).on('value', snapshot => {
+                let totalNetJob = 0; let totalDriverShare = 0;
+                
+                let html = `
+                    <div class="btn-group" style="margin-bottom:12px;">
+                        <button class="btn-share" onclick="generateShareLink('driver', '${driverId}')">نسخ رابط المشاركة للسائق 🔗</button>
+                        <button class="btn-pdf" onclick="exportSingleDriverPDF('${driverName}')">تصدير تقرير السائق (PDF) 📄</button>
+                    </div>
+                    <div id="driverPdfContent">
+                        <h4>حركات رحلات الدورة الحالية (5 ${curr.month} - 4 ${curr.month === 12 ? 1 : curr.month + 1}):</h4>
+                        <table>
+                            <thead><tr><th>التاريخ</th><th>صافي شغل الرحلة</th><th>نسبته المستحقة</th></tr></thead>
+                            <tbody>
+                `;
+                
+                if (!snapshot.exists()) { 
+                    html += '<tr><td colspan="3" style="text-align:center;">لا توجد رحلات لهذه الدورة.</td></tr>'; 
+                } else {
+                    snapshot.forEach(child => { 
+                        let t = child.val();
+                        let tripDate = t.isoDate ? new Date(t.isoDate) : new Date();
+                        if (tripDate >= cycle.start && tripDate <= cycle.end) {
+                            let tripNet = Number(t.netRevenue || (t.totalRev - t.totalExpenses) || 0);
+                            totalNetJob += tripNet;
+                            totalDriverShare += Number(t.driverShare || 0);
+                            html += `<tr><td>${t.timestamp}</td><td>${tripNet} ج.م</td><td style="color:var(--primary); font-weight:bold;">${t.driverShare} ج.م</td></tr>`; 
+                        }
+                    });
+                }
+
+                db.ref(`drivers/${driverId}`).once('value', drvSnap => {
+                    let d = drvSnap.val();
+                    let cumulativeBalance = Number(d.balance !== undefined ? d.balance : (d.openingBalance || 0));
+
+                    db.ref('driver_withdrawals').orderByChild('driverId').equalTo(driverId).once('value', wSnap => {
+                        let withdrawalsHtml = '<h4>سجل المسحوبات والسلف الخاصة بالسائق:</h4><table><tr><th>التاريخ</th><th>المبلغ والطريقة</th><th>البيان والصور</th></tr>';
+                        if (!wSnap.exists()) {
+                            withdrawalsHtml += '<tr><td colspan="3" style="text-align:center;">لا توجد مسحوبات سابقة</td></tr>';
+                        } else {
+                            wSnap.forEach(w => {
+                                let item = w.val();
+                                let images = item.receiptImages || (item.receiptImg ? [item.receiptImg] : []);
+                                let imgBtn = images.length > 0 ? `<br><button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})' style="margin-top:3px;">عرض الصور (${images.length}) 🖼️</button>` : '';
+                                withdrawalsHtml += `<tr><td>${item.timestamp}</td><td style="color:var(--danger); font-weight:bold;">${item.amount} ج.م (${item.method})</td><td>${item.note}${imgBtn}</td></tr>`;
+                            });
+                        }
+                        withdrawalsHtml += '</table>';
+
+                        html += `
+                                    </tbody>
+                                </table>
+                                <hr style="border-color:#444; margin:10px 0;">
+                                <div class="detail-row"><span>إجمالي شغل السائق بالدورة الحالية (بعد الخصم):</span> <strong>${totalNetJob} ج.م</strong></div>
+                                <div class="detail-row"><span>إجمالي نسبة السائق المستحقة بالدورة الحالية:</span> <strong style="color:var(--primary);">${totalDriverShare} ج.م</strong></div>
+                                <div class="detail-row"><span>الرصيد التراكمي المتبقي للسائق (له / عليه):</span> <strong style="color:${cumulativeBalance >= 0 ? 'var(--success)' : 'var(--danger)'}; font-size:16px;">${cumulativeBalance} ج.م</strong></div>
+                                ${withdrawalsHtml}
+                            </div>
+                        `;
+                        document.getElementById('modalBody').innerHTML = html;
+                    });
+                });
+            });
+        }
+
+        function exportSingleDriverPDF(driverName) {
+            let element = document.getElementById('driverPdfContent');
+            let opt = { margin: 10, filename: `تقرير_السائق_${driverName}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- السيارات ---
+        function saveOrUpdateCar(e) {
+            e.preventDefault();
+            const id = document.getElementById('cId').value;
+            const ownership = document.getElementById('cOwnership').value;
+            const data = {
+                model: document.getElementById('cModel').value,
+                plateNumber: document.getElementById('cPlateNumber').value,
+                ownership: ownership,
+                ownerName: ownership === 'إيجار' ? document.getElementById('cOwnerName').value : 'ملك',
+                ownerPhone: ownership === 'إيجار' ? document.getElementById('cOwnerPhone').value : '-',
+                monthlyRent: ownership === 'إيجار' ? Number(document.getElementById('cMonthlyRent').value) : 0,
+                rentDueDate: ownership === 'إيجار' ? document.getElementById('cRentDueDate').value : '-',
+                instapay: document.getElementById('cInstapay').value,
+                vodafoneCash: document.getElementById('cVodafoneCash').value,
+                openingBalance: Number(document.getElementById('cOpeningBalance').value)
+            };
+            if (id) {
+                db.ref(`cars/${id}`).update(data).then(() => { alert('تم تحديث السيارة بنجاح'); resetCarForm(); updateSecretTickerData(); });
+            } else {
+                data.totalEarnings = data.openingBalance;
+                db.ref('cars').push(data).then(() => { alert('تم حفظ السيارة بنجاح'); resetCarForm(); updateSecretTickerData(); });
+            }
+        }
+        function editCar(id, model, plateNumber, ownership, ownerName, ownerPhone, monthlyRent, rentDueDate, instapay, vodafoneCash, openingBalance) {
+            document.getElementById('cId').value = id;
+            document.getElementById('cModel').value = model;
+            document.getElementById('cPlateNumber').value = plateNumber || '';
+            document.getElementById('cOwnership').value = ownership;
+            toggleRentFields();
+            if (ownership === 'إيجار') {
+                document.getElementById('cOwnerName').value = ownerName;
+                document.getElementById('cOwnerPhone').value = ownerPhone;
+                document.getElementById('cMonthlyRent').value = monthlyRent;
+                document.getElementById('cRentDueDate').value = rentDueDate;
+            }
+            document.getElementById('cInstapay').value = instapay || '';
+            document.getElementById('cVodafoneCash').value = vodafoneCash || '';
+            document.getElementById('cOpeningBalance').value = openingBalance || 0;
+            document.getElementById('carFormTitle').innerText = 'تعديل سيارة';
+            document.getElementById('carSubmitBtn').innerText = 'تحديث';
+            document.getElementById('carCancelBtn').style.display = 'block';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+        function resetCarForm() {
+            document.getElementById('carForm').reset();
+            document.getElementById('cId').value = '';
+            document.getElementById('carFormTitle').innerText = 'إضافة سيارة جديدة';
+            document.getElementById('carSubmitBtn').innerText = 'حفظ السيارة';
+            document.getElementById('carCancelBtn').style.display = 'none';
+            toggleRentFields();
+        }
+        function deleteCar(id) {
+            if (confirm('هل أنت متأكد من حذف هذه السيارة؟')) db.ref(`cars/${id}`).remove().then(() => { alert('تم الحذف'); updateSecretTickerData(); });
+        }
+
+        function loadCarsList() {
+            db.ref('cars').on('value', snapshot => {
+                let html = '<table><tr><th>الموديل / اللوحة</th><th>إجمالي شغل الدورة</th><th>إجمالي المصاريف + نسبة السائق</th><th>صافي الربح</th><th>تحكم</th></tr>';
+                if (!snapshot.exists()) {
+                    html += '<tr><td colspan="5" style="text-align:center;">لا توجد سيارات</td></tr>';
+                } else {
+                    let curr = getCurrentCycle();
+                    let cycle = getCycleRange(curr.year, curr.month);
+
+                    db.ref('trips').once('value', tripsSnap => {
+                        db.ref('car_expenses').once('value', expSnap => {
+                            snapshot.forEach(child => {
+                                let c = child.val(); let id = child.key;
+                                let totalJob = 0; let totalExpenses = 0; let totalDriverShares = 0;
+                                
+                                if (tripsSnap.exists()) {
+                                    tripsSnap.forEach(tSnap => {
+                                        let t = tSnap.val();
+                                        let tripDate = t.isoDate ? new Date(t.isoDate) : new Date();
+                                        if (t.carId === id && tripDate >= cycle.start && tripDate <= cycle.end) {
+                                            totalJob += Number(t.totalRev || 0);
+                                            totalExpenses += Number(t.totalExpenses || 0);
+                                            totalDriverShares += Number(t.driverShare || 0);
+                                        }
+                                    });
+                                }
+
+                                let extraMaint = 0;
+                                if (expSnap.exists()) {
+                                    expSnap.forEach(e => {
+                                        let ex = e.val();
+                                        let exDate = ex.isoDate ? new Date(ex.isoDate) : new Date();
+                                        if (ex.carId === id && exDate >= cycle.start && exDate <= cycle.end) {
+                                            extraMaint += Number(ex.amount || 0);
+                                        }
+                                    });
+                                }
+
+                                let grandTotalCarExpenses = totalExpenses + totalDriverShares + extraMaint;
+                                let netProfit = (c.openingBalance || 0) + totalJob - grandTotalCarExpenses - (c.ownership === 'إيجار' ? Number(c.monthlyRent || 0) : 0);
+
+                                html += `<tr>
+                                    <td onclick="openCarDetails('${id}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${c.model}<br><small style="color:var(--gray)">${c.plateNumber || ''}</small></td>
+                                    <td>${totalJob} ج.م</td>
+                                    <td style="color:var(--danger);">${grandTotalCarExpenses} ج.م</td>
+                                    <td style="color:var(--success); font-weight:bold;">${netProfit} ج.م</td>
+                                    <td>
+                                        <button class="btn-share btn-sm" onclick="generateShareLink('car', '${id}')">مشاركة 🔗</button>
+                                        <button class="btn-info btn-sm" onclick="editCar('${id}', '${c.model}', '${c.plateNumber}', '${c.ownership}', '${c.ownerName}', '${c.ownerPhone}', ${c.monthlyRent}, '${c.rentDueDate}', '${c.instapay}', '${c.cVodafoneCash}', ${c.openingBalance})">تعديل</button>
+                                        <button class="btn-danger btn-sm" onclick="deleteCar('${id}')">حذف</button>
+                                    </td>
+                                </tr>`;
+                            });
+                            html += '</table>';
+                            document.getElementById('carsList').innerHTML = html;
+                        });
+                    });
+                }
+            });
+        }
+
+        function openCarDetails(carId) {
+            document.getElementById('detailModal').style.display = 'flex';
+            document.getElementById('modalTitle').innerText = 'تفاصيل كشف السيارة (الدورة الحالية)';
+            db.ref(`cars/${carId}`).once('value', carSnap => {
+                if (!carSnap.exists()) return;
+                let c = carSnap.val();
+                let curr = getCurrentCycle();
+                let cycle = getCycleRange(curr.year, curr.month);
+
+                db.ref('trips').orderByChild('carId').equalTo(carId).once('value', tripsSnap => {
+                    let totalJob = 0; let totalExp = 0; let totalDriverShares = 0;
+                    if (tripsSnap.exists()) {
+                        tripsSnap.forEach(t => { 
+                            let item = t.val();
+                            let d = item.isoDate ? new Date(item.isoDate) : new Date();
+                            if (d >= cycle.start && d <= cycle.end) {
+                                totalJob += Number(item.totalRev || 0); 
+                                totalExp += Number(item.totalExpenses || 0);
+                                totalDriverShares += Number(item.driverShare || 0);
+                            }
+                        });
+                    }
+
+                    db.ref('car_expenses').orderByChild('carId').equalTo(carId).once('value', expSnap => {
+                        let extraMaint = 0;
+                        let maintLogsHtml = '<h4>سجل الصيانة والمصاريف الإضافية المسحوبة من الخزنة:</h4><table><tr><th>التاريخ</th><th>المبلغ وطريقة الدفع</th><th>البيان والصور</th></tr>';
+                        if (!expSnap.exists()) {
+                            maintLogsHtml += '<tr><td colspan="3" style="text-align:center;">لا توجد مصاريف صيانة لهذه الدورة</td></tr>';
+                        } else {
+                            expSnap.forEach(e => {
+                                let ex = e.val();
+                                let exDate = ex.isoDate ? new Date(ex.isoDate) : new Date();
+                                if (exDate >= cycle.start && exDate <= cycle.end) {
+                                    extraMaint += Number(ex.amount || 0);
+                                    let images = ex.receiptImages || (ex.receiptImg ? [ex.receiptImg] : []);
+                                    let imgBtn = images.length > 0 ? `<br><button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})' style="margin-top:3px;">عرض الصور (${images.length}) 🖼️</button>` : '';
+                                    maintLogsHtml += `<tr><td>${ex.timestamp}</td><td style="color:var(--danger);">${ex.amount} ج.م (${ex.method})</td><td>${ex.note}${imgBtn}</td></tr>`;
+                                }
+                            });
+                        }
+                        maintLogsHtml += '</table>';
+
+                        let grandTotalExpenses = totalExp + totalDriverShares + extraMaint;
+                        let netProfit = (c.openingBalance || 0) + totalJob - grandTotalExpenses - (c.ownership === 'إيجار' ? Number(c.monthlyRent || 0) : 0);
+
+                        let html = `
+                            <div class="btn-group" style="margin-bottom:12px;">
+                                <button class="btn-share" onclick="generateShareLink('car', '${carId}')">نسخ رابط المشاركة للسيارة 🔗</button>
+                                <button class="btn-pdf" onclick="exportSingleCarPDF('${c.model}')">تصدير تقرير السيارة (PDF) 📄</button>
+                            </div>
+                            <div id="carPdfContent">
+                                <div style="margin-bottom: 8px;"><b>الموديل:</b> ${c.model} (${c.plateNumber || '-'})</div>
+                                <div style="margin-bottom: 8px;"><b>نوع الحيازة:</b> ${c.ownership}</div>
+                                ${c.ownership === 'إيجار' ? `<div style="margin-bottom: 8px;"><b>المالك:</b> ${c.ownerName} (${c.ownerPhone})</div><div style="margin-bottom: 8px;"><b>الإيجار الشهري:</b> ${c.monthlyRent} ج.م</div>` : ''}
+                                <hr style="border-color:#444; margin:10px 0;">
+                                <div style="margin-bottom: 8px;">إجمالي شغل الدورة: <strong>${totalJob} ج.م</strong></div>
+                                <div style="margin-bottom: 8px;">مصاريف تشغيل الرحلات: <strong>${totalExp} ج.م</strong></div>
+                                <div style="margin-bottom: 8px;">مصاريف الصيانة والإضافات: <strong>${extraMaint} ج.م</strong></div>
+                                <div style="margin-bottom: 8px;">إجمالي نسب السائقين: <strong>${totalDriverShares} ج.م</strong></div>
+                                <div style="margin-bottom: 8px; color:var(--danger);"><b>إجمالي المصاريف الشاملة: ${grandTotalExpenses} ج.م</b></div>
+                                <div style="margin-bottom: 12px;">المكسب الصافي للسيارة: <strong style="color:var(--primary); font-size:16px;">${netProfit} ج.م</strong></div>
+                                ${maintLogsHtml}
+                            </div>
+                        `;
+                        document.getElementById('modalBody').innerHTML = html;
+                    });
+                });
+            });
+        }
+
+        function exportSingleCarPDF(carModel) {
+            let element = document.getElementById('carPdfContent');
+            let opt = { margin: 10, filename: `تقرير_السيارة_${carModel}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- الأرشيف الشهري ---
+        function loadArchiveData() {
+            let year = Number(document.getElementById('archiveYear').value);
+            let month = Number(document.getElementById('archiveMonth').value);
+            let cycle = getCycleRange(year, month);
+
+            db.ref('trips').once('value', snapshot => {
+                let cycleTrips = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let t = child.val();
+                        let date = t.isoDate ? new Date(t.isoDate) : new Date();
+                        if (date >= cycle.start && date <= cycle.end) {
+                            cycleTrips.push(t);
+                        }
+                    });
+                }
+
+                db.ref('drivers').once('value', drvSnap => {
+                    let driversHtml = '<table><tr><th>السائق</th><th>إجمالي شغل السائق (بعد الخصم)</th><th>نسبته المستحقة</th><th>الرصيد التراكمي</th><th>تصدير</th></tr>';
+                    drvSnap.forEach(child => {
+                        let drv = child.val(); let drvId = child.key;
+                        let dNetRev = 0; let dShare = 0;
+                        cycleTrips.filter(t => t.driverId === drvId).forEach(t => {
+                            dNetRev += Number(t.netRevenue || (t.totalRev - t.totalExpenses) || 0);
+                            dShare += Number(t.driverShare || 0);
+                        });
+                        let bal = Number(drv.balance !== undefined ? drv.balance : (drv.openingBalance || 0));
+                        driversHtml += `<tr>
+                            <td><b>${drv.name}</b></td>
+                            <td>${dNetRev} ج.م</td>
+                            <td style="color:var(--primary); font-weight:bold;">${dShare} ج.م</td>
+                            <td style="color:${bal >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${bal} ج.م</td>
+                            <td><button class="btn-pdf btn-sm" onclick="exportDriverMonthPDF('${drvId}', '${drv.name}', ${year}, ${month})">PDF 📄</button></td>
+                        </tr>`;
+                    });
+                    driversHtml += '</table>';
+                    document.getElementById('archiveDriversList').innerHTML = driversHtml;
+                });
+
+                db.ref('cars').once('value', carSnap => {
+                    db.ref('car_expenses').once('value', expSnap => {
+                        let carsHtml = '<table><tr><th>السيارة</th><th>شغل الدورة</th><th>المصاريف الشاملة (بما فيها السائق)</th><th>صافي ربح السيارة</th><th>تصدير</th></tr>';
+                        carSnap.forEach(child => {
+                            let c = child.val(); let carId = child.key;
+                            let cRev = 0; let cExp = 0; let cDriverShares = 0;
+                            
+                            cycleTrips.filter(t => t.carId === carId).forEach(t => {
+                                cRev += Number(t.totalRev || 0);
+                                cExp += Number(t.totalExpenses || 0);
+                                cDriverShares += Number(t.driverShare || 0);
+                            });
+
+                            let extraMaint = 0;
+                            if (expSnap.exists()) {
+                                expSnap.forEach(e => {
+                                    let ex = e.val();
+                                    let exDate = ex.isoDate ? new Date(ex.isoDate) : new Date();
+                                    if (ex.carId === carId && exDate >= cycle.start && exDate <= cycle.end) {
+                                        extraMaint += Number(ex.amount || 0);
+                                    }
+                                });
+                            }
+
+                            let grandTotalExp = cExp + cDriverShares + extraMaint;
+                            let netCar = cRev - grandTotalExp - (c.ownership === 'إيجار' ? Number(c.monthlyRent || 0) : 0);
+                            
+                            carsHtml += `<tr>
+                                <td><b>${c.model}</b> (${c.plateNumber || ''})</td>
+                                <td>${cRev} ج.م</td>
+                                <td>${grandTotalExp} ج.م</td>
+                                <td style="color:var(--primary); font-weight:bold;">${netCar} ج.م</td>
+                                <td><button class="btn-pdf btn-sm" onclick="exportCarMonthPDF('${carId}', '${c.model}', ${year}, ${month})">PDF 📄</button></td>
+                            </tr>`;
+                        });
+                        carsHtml += '</table>';
+                        document.getElementById('archiveCarsList').innerHTML = carsHtml;
+                    });
+                });
+            });
+        }
+
+        function exportDriverMonthPDF(driverId, driverName, year, month) {
+            let cycle = getCycleRange(year, month);
+            db.ref('trips').once('value', snapshot => {
+                let trips = [];
+                let totalNetJob = 0; let totalShare = 0;
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let t = child.val();
+                        let date = t.isoDate ? new Date(t.isoDate) : new Date();
+                        if (t.driverId === driverId && date >= cycle.start && date <= cycle.end) {
+                            trips.push(t);
+                            let tripNet = Number(t.netRevenue || (t.totalRev - t.totalExpenses) || 0);
+                            totalNetJob += tripNet;
+                            totalShare += Number(t.driverShare || 0);
+                        }
+                    });
+                }
+
+                db.ref(`drivers/${driverId}`).once('value', drvSnap => {
+                    let d = drvSnap.val();
+                    let bal = Number(d.balance !== undefined ? d.balance : (d.openingBalance || 0));
+
+                    let content = `
+                        <div class="pdf-template" dir="rtl">
+                            <h2 style="text-align:center; color:#d4af37; margin-bottom:5px;">الأسطول الذهبي - كشف حساب سائق</h2>
+                            <h3 style="text-align:center; margin-bottom:15px;">السائق: ${driverName} - دورة (${month} / ${year})</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:bold;">
+                                <div>إجمالي شغل السائق (بعد الخصم): ${totalNetJob} ج.م</div>
+                                <div>نسبة السائق المستحقة: ${totalShare} ج.م</div>
+                                <div>الرصيد التراكمي المتبقي: ${bal} ج.م</div>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr><th>التاريخ والوقت</th><th>إجمالي الرحلة</th><th>مصاريف الرحلة</th><th>الصافي</th><th>نسبة السائق</th></tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    trips.forEach(t => {
+                        content += `<tr><td>${t.timestamp}</td><td>${t.totalRev} ج.م</td><td>${t.totalExpenses} ج.م</td><td>${t.netRevenue} ج.م</td><td>${t.driverShare} ج.م</td></tr>`;
+                    });
+                    content += `</tbody></table></div>`;
+
+                    let opt = { margin: 10, filename: `السائق_${driverName}_دورة_${month}_${year}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                    html2pdf().set(opt).from(content).save();
+                });
+            });
+        }
+
+        function exportCarMonthPDF(carId, carModel, year, month) {
+            let cycle = getCycleRange(year, month);
+            db.ref('trips').once('value', snapshot => {
+                let trips = [];
+                let totalJob = 0; let totalExp = 0; let totalDriverShares = 0;
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let t = child.val();
+                        let date = t.isoDate ? new Date(t.isoDate) : new Date();
+                        if (t.carId === carId && date >= cycle.start && date <= cycle.end) {
+                            trips.push(t);
+                            totalJob += Number(t.totalRev || 0);
+                            totalExp += Number(t.totalExpenses || 0);
+                            totalDriverShares += Number(t.driverShare || 0);
+                        }
+                    });
+                }
+
+                db.ref('car_expenses').once('value', expSnap => {
+                    let extraMaint = 0;
+                    if (expSnap.exists()) {
+                        expSnap.forEach(e => {
+                            let ex = e.val();
+                            let exDate = ex.isoDate ? new Date(ex.isoDate) : new Date();
+                            if (ex.carId === carId && exDate >= cycle.start && exDate <= cycle.end) {
+                                extraMaint += Number(ex.amount || 0);
+                            }
+                        });
+                    }
+
+                    let grandTotalExp = totalExp + totalDriverShares + extraMaint;
+
+                    let content = `
+                        <div class="pdf-template" dir="rtl">
+                            <h2 style="text-align:center; color:#d4af37; margin-bottom:5px;">الأسطول الذهبي - تقرير السيارة الشهري</h2>
+                            <h3 style="text-align:center; margin-bottom:15px;">السيارة: ${carModel} - دورة (${month} / ${year})</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:bold;">
+                                <div>إجمالي الدخل: ${totalJob} ج.م</div>
+                                <div>مصاريف التشغيل والصيانة: ${totalExp + extraMaint} ج.م</div>
+                                <div>إجمالي نسب السائقين: ${totalDriverShares} ج.م</div>
+                                <div>إجمالي المصاريف الشاملة: ${grandTotalExp} ج.م</div>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr><th>التاريخ والوقت</th><th>الإيراد</th><th>المصاريف</th><th>صافي الرحلة</th></tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    trips.forEach(t => {
+                        content += `<tr><td>${t.timestamp}</td><td>${t.totalRev} ج.م</td><td>${t.totalExpenses} ج.م</td><td>${t.netRevenue} ج.م</td></tr>`;
+                    });
+                    content += `</tbody></table></div>`;
+
+                    let opt = { margin: 10, filename: `السيارة_${carModel}_دورة_${month}_${year}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+                    html2pdf().set(opt).from(content).save();
+                });
+            });
+        }
+
+        function exportFullArchivePDF() {
+            let year = document.getElementById('archiveYear').value;
+            let month = document.getElementById('archiveMonth').value;
+            let element = document.getElementById('archivePrintArea');
+
+            let opt = { margin: 10, filename: `تقرير_الأرشيف_الكامل_دورة_${month}_${year}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- الديون ---
+        function saveOrUpdateDebt(e) {
+            e.preventDefault();
+            const id = document.getElementById('debtId').value;
+            const type = document.getElementById('debtType').value;
+            const data = {
+                type: type,
+                name: document.getElementById('debtName').value,
+                phone: document.getElementById('debtPhone').value
+            };
+
+            if (type === 'ثابت') {
+                data.amount = Number(document.getElementById('debtAmount').value);
+                data.dueDate = document.getElementById('debtFixedDueDate').value;
+            } else {
+                data.principal = Number(document.getElementById('debtPrincipal').value);
+                data.monthlyInterest = Number(document.getElementById('debtMonthlyInterest').value);
+                data.dueDate = document.getElementById('debtInterestDueDateDay').value;
+            }
+
+            if (id) {
+                db.ref(`debts/${id}`).update(data).then(() => { alert('تم تعديل الدين بنجاح'); resetDebtForm(); updateSecretTickerData(); });
+            } else {
+                data.paidAmount = 0;
+                db.ref('debts').push(data).then(() => { alert('تم حفظ الدين بنجاح'); resetDebtForm(); updateSecretTickerData(); });
+            }
+        }
+
+        function editDebt(id) {
+            db.ref(`debts/${id}`).once('value').then(snapshot => {
+                if (!snapshot.exists()) return;
+                let d = snapshot.val();
+                document.getElementById('debtId').value = id;
+                document.getElementById('debtType').value = d.type || 'ثابت';
+                toggleDebtFields();
+                document.getElementById('debtName').value = d.name || '';
+                document.getElementById('debtPhone').value = d.phone || '';
+                
+                if (d.type === 'فائدة') {
+                    document.getElementById('debtPrincipal').value = d.principal || 0;
+                    document.getElementById('debtMonthlyInterest').value = d.monthlyInterest || 0;
+                    document.getElementById('debtInterestDueDateDay').value = d.dueDate || '';
+                } else {
+                    document.getElementById('debtAmount').value = d.amount || 0;
+                    document.getElementById('debtFixedDueDate').value = d.dueDate || '';
+                }
+                document.getElementById('debtFormTitle').innerText = 'تعديل بيانات الدين';
+                document.getElementById('debtSubmitBtn').innerText = 'تحديث الدين';
+                document.getElementById('debtCancelBtn').style.display = 'block';
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
+        }
+
+        function resetDebtForm() {
+            document.getElementById('debtForm').reset();
+            document.getElementById('debtId').value = '';
+            document.getElementById('debtFormTitle').innerText = 'تسجيل دين جديد';
+            document.getElementById('debtSubmitBtn').innerText = 'حفظ الدين';
+            document.getElementById('debtCancelBtn').style.display = 'none';
+            toggleDebtFields();
+        }
+
+        function deleteDebt(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الدين؟')) db.ref(`debts/${id}`).remove().then(() => { alert('تم الحذف بنجاح'); updateSecretTickerData(); });
+        }
+
+        function loadDebtsList() {
+            db.ref('debts').on('value', snapshot => {
+                let html = '<table><tr><th>الدائن</th><th>النوع</th><th>المبلغ</th><th>المتبقي / الميعاد</th><th>تحكم</th></tr>';
+                if (!snapshot.exists()) {
+                    html += '<tr><td colspan="5" style="text-align:center;">لا توجد ديون</td></tr>';
+                } else {
+                    snapshot.forEach(child => {
+                        let d = child.val(); let id = child.key;
+                        if (d.type === 'فائدة') {
+                            html += `<tr>
+                                <td onclick="openDebtAccountDetails('${id}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${d.name}<br><small style="color:var(--gray)">${d.phone}</small></td>
+                                <td><span style="color:var(--info);">بفائدة</span></td>
+                                <td>${d.principal} ج.م</td>
+                                <td style="color:var(--primary);">${d.monthlyInterest} ج.م/شهر<br><small style="color:var(--gray)">يوم ${d.dueDate || '-'}</small></td>
+                                <td>
+                                    <button class="btn-share btn-sm" onclick="generateShareLink('debt', '${id}')">مشاركة 🔗</button>
+                                    <button class="btn-info btn-sm" onclick="editDebt('${id}')">تعديل</button>
+                                    <button class="btn-danger btn-sm" onclick="deleteDebt('${id}')">حذف</button>
+                                </td>
+                            </tr>`;
+                        } else {
+                            let remaining = (d.amount || 0) - (d.paidAmount || 0);
+                            html += `<tr>
+                                <td onclick="openDebtAccountDetails('${id}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${d.name}<br><small style="color:var(--gray)">${d.phone}</small></td>
+                                <td>ثابت</td>
+                                <td>${d.amount || 0} ج.م</td>
+                                <td style="color:var(--danger);">${remaining} ج.م<br><small style="color:var(--gray)">تاريخ: ${d.dueDate || '-'}</small></td>
+                                <td>
+                                    <button class="btn-share btn-sm" onclick="generateShareLink('debt', '${id}')">مشاركة 🔗</button>
+                                    <button class="btn-info btn-sm" onclick="editDebt('${id}')">تعديل</button>
+                                    <button class="btn-danger btn-sm" onclick="deleteDebt('${id}')">حذف</button>
+                                </td>
+                            </tr>`;
+                        }
+                    });
+                }
+                html += '</table>';
+                document.getElementById('debtsList').innerHTML = html;
+            });
+        }
+
+        function openDebtAccountDetails(debtId) {
+            document.getElementById('detailModal').style.display = 'flex';
+            db.ref(`debts/${debtId}`).once('value', snapshot => {
+                if (!snapshot.exists()) return;
+                let d = snapshot.val();
+                document.getElementById('modalTitle').innerText = `كشف حساب الدين: ${d.name}`;
+
+                let remaining = (d.amount || 0) - (d.paidAmount || 0);
+
+                db.ref('debt_transactions').orderByChild('debtId').equalTo(debtId).once('value', transSnap => {
+                    let transHtml = '<h4>سجل الحركات المالية المتبادلة:</h4><table><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>الطريقة وصورة السكرين</th><th>تحكم</th></tr>';
+                    if (!transSnap.exists()) {
+                        transHtml += '<tr><td colspan="5" style="text-align:center;">لا توجد حركات سابقة</td></tr>';
+                    } else {
+                        transSnap.forEach(p => {
+                            let tr = p.val(); let trKey = p.key;
+                            let color = tr.actionType === 'تسليم (سداد)' ? 'var(--danger)' : 'var(--success)';
+                            let images = tr.receiptImages || (tr.receiptImg ? [tr.receiptImg] : []);
+                            let imgBtn = images.length > 0 ? `<br><button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})' style="margin-top:3px;">عرض الصور (${images.length}) 🖼️</button>` : '';
+                            
+                            transHtml += `<tr>
+                                <td>${tr.timestamp}</td>
+                                <td style="color:${color}; font-weight:bold;">${tr.actionType}</td>
+                                <td>${tr.amount} ج.م</td>
+                                <td>${tr.method || 'كاش'}<br><small style="color:var(--gray)">${tr.note || '-'}</small>${imgBtn}</td>
+                                <td>
+                                    <button class="btn-info btn-sm" onclick="editDebtTransactionNote('${trKey}', '${debtId}', '${tr.note || ''}')">تعديل</button>
+                                    <button class="btn-danger btn-sm" onclick="deleteDebtTransaction('${trKey}', '${debtId}', '${tr.actionType}', ${tr.amount}, '${tr.deductType || ''}')">حذف</button>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                    transHtml += '</table>';
+
+                    let html = `
+                        <div class="btn-group" style="margin-bottom: 12px;">
+                            <button class="btn-share" onclick="generateShareLink('debt', '${debtId}')">نسخ رابط المشاركة للدائن 🔗</button>
+                            <button class="btn-pdf" onclick="exportDebtAccountPDF('${d.name}')">تصدير كشف الحساب (PDF) 📄</button>
+                        </div>
+                        <div id="debtPdfPrintArea">
+                            <div class="detail-row"><span>الدائن / الجهة:</span> <strong>${d.name} (${d.phone})</strong></div>
+                            <div class="detail-row"><span>نوع الدين:</span> <strong>${d.type}</strong></div>
+                            ${d.type === 'فائدة' ? `
+                                <div class="detail-row"><span>أصل الدين الحالي:</span> <strong>${d.principal} ج.م</strong></div>
+                                <div class="detail-row"><span>مبلغ الفائدة الشهرية:</span> <strong style="color:var(--primary);">${d.monthlyInterest} ج.م</strong></div>
+                                <div class="detail-row"><span>ميعاد السداد الشهري:</span> <strong>يوم ${d.dueDate || '-'} من كل شهر</strong></div>
+                            ` : `
+                                <div class="detail-row"><span>المبلغ الأصلي للدين:</span> <strong>${d.amount || 0} ج.م</strong></div>
+                                <div class="detail-row"><span>المسدد حتى الآن:</span> <strong style="color:var(--success);">${d.paidAmount || 0} ج.م</strong></div>
+                                <div class="detail-row"><span>المتبقي من الدين:</span> <strong style="color:var(--danger);">${remaining} ج.م</strong></div>
+                                <div class="detail-row"><span>ميعاد السداد المطلوب:</span> <strong>${d.dueDate || '-'}</strong></div>
+                            `}
+                            ${transHtml}
+                        </div>
+                        <div class="btn-group" style="margin-top: 15px;">
+                            <button class="btn-danger" style="flex:1;" onclick="openDebtTransactionModal('${debtId}', 'تسليم (سداد)')">تسليم مبلغ (سداد للدائن 💸)</button>
+                            <button class="btn-success" style="flex:1;" onclick="openDebtTransactionModal('${debtId}', 'استلام (إيداع)')">استلام مبلغ (إيداع/اقتراض 📥)</button>
+                        </div>
+                    `;
+                    document.getElementById('modalBody').innerHTML = html;
+                });
+            });
+        }
+
+        // --- نافذة معاملات الديون الموحدة ---
+        function openDebtTransactionModal(debtId, defaultAction) {
+            db.ref(`debts/${debtId}`).once('value', snapshot => {
+                if (!snapshot.exists()) return;
+                let d = snapshot.val();
+                
+                document.getElementById('dtDebtId').value = debtId;
+                document.getElementById('dtDebtIsInterest').value = (d.type === 'فائدة') ? 'true' : 'false';
+                document.getElementById('dtActionType').value = defaultAction;
+                document.getElementById('dtAmount').value = '';
+                document.getElementById('dtMethod').value = 'كاش';
+                document.getElementById('dtNote').value = '';
+                document.getElementById('dtReceiptImgFile').value = '';
+
+                document.getElementById('debtModalHeader').innerText = `تسجيل حركة مالية للدائن: ${d.name}`;
+                toggleDebtDeductTypeVisibility();
+                
+                document.getElementById('debtTransactionModal').style.display = 'flex';
+            });
+        }
+
+        function toggleDebtDeductTypeVisibility() {
+            let isInterest = document.getElementById('dtDebtIsInterest').value === 'true';
+            let actionType = document.getElementById('dtActionType').value;
+            
+            if (isInterest && actionType === 'تسليم (سداد)') {
+                document.getElementById('debtDeductGroup').style.display = 'block';
+            } else {
+                document.getElementById('debtDeductGroup').style.display = 'none';
+            }
+        }
+
+        async function executeDebtTransactionSubmit(e) {
+            e.preventDefault();
+            let debtId = document.getElementById('dtDebtId').value;
+            let isInterest = document.getElementById('dtDebtIsInterest').value === 'true';
+            let actionType = document.getElementById('dtActionType').value;
+            let deductType = (isInterest && actionType === 'تسليم (سداد)') ? document.getElementById('dtDeductType').value : 'عادي';
+            let amount = Number(document.getElementById('dtAmount').value);
+            let method = document.getElementById('dtMethod').value;
+            let note = document.getElementById('dtNote').value;
+
+            if (amount <= 0) { alert('يرجى إدخال مبلغ صحيح أكبر من الصفر'); return; }
+
+            let receiptImages = await filesToMultipleBase64('dtReceiptImgFile');
+
+            db.ref(`debts/${debtId}`).once('value', snapshot => {
+                if (!snapshot.exists()) return;
+                let d = snapshot.val();
+
+                let now = new Date();
+                let timestamp = now.toLocaleString('ar-EG');
+                let isoDate = now.toISOString();
+                let updates = {};
+
+                let fullNote = note ? `${note} [${deductType}]` : `[${deductType}]`;
+
+                let transRef = db.ref('debt_transactions').push().key;
+                updates[`debt_transactions/${transRef}`] = { 
+                    debtId, 
+                    timestamp, 
+                    isoDate, 
+                    actionType, 
+                    amount, 
+                    method, 
+                    deductType,
+                    note: fullNote,
+                    receiptImages
+                };
+
+                let treasuryRef = db.ref('treasury_logs').push().key;
+                if (actionType === 'تسليم (سداد)') {
+                    updates[`treasury_logs/${treasuryRef}`] = { 
+                        isoDate, 
+                        timestamp, 
+                        type: 'سحب', 
+                        amount, 
+                        method,
+                        note: `تسليم للدائن (${d.name}) - البيان: ${fullNote}`,
+                        receiptImages 
+                    };
+
+                    if (d.type === 'فائدة') {
+                        if (deductType === 'من أصل المبلغ') {
+                            updates[`debts/${debtId}/principal`] = firebase.database.ServerValue.increment(-amount);
+                        }
+                    } else {
+                        updates[`debts/${debtId}/paidAmount`] = firebase.database.ServerValue.increment(amount);
+                    }
+                } else {
+                    updates[`treasury_logs/${treasuryRef}`] = { 
+                        isoDate, 
+                        timestamp, 
+                        type: 'إيداع', 
+                        amount, 
+                        method,
+                        note: `استلام من الدائن (${d.name}) - البيان: ${fullNote}`,
+                        receiptImages 
+                    };
+
+                    if (d.type === 'فائدة') {
+                        updates[`debts/${debtId}/principal`] = firebase.database.ServerValue.increment(amount);
+                    } else {
+                        updates[`debts/${debtId}/paidAmount`] = firebase.database.ServerValue.increment(-amount);
+                    }
+                }
+
+                db.ref().update(updates).then(() => {
+                    alert(`تم تسجيل حركة الـ (${actionType}) بنجاح والتسميع المباشر في الخزنة والدين!`);
+                    closeModal('debtTransactionModal');
+                    openDebtAccountDetails(debtId);
+                    updateSecretTickerData();
+                });
+            });
+        }
+
+        function editDebtTransactionNote(trKey, debtId, currentNote) {
+            let newNote = prompt("تعديل البيان / الملاحظة للحركة المالية:", currentNote);
+            if (newNote !== null) {
+                db.ref(`debt_transactions/${trKey}`).update({ note: newNote }).then(() => {
+                    alert("تم تعديل البيان بنجاح");
+                    openDebtAccountDetails(debtId);
+                });
+            }
+        }
+
+        function deleteDebtTransaction(trKey, debtId, actionType, amount, deductType) {
+            if (!confirm("هل أنت متأكد من حذف هذه الحركة؟ سيتم إلغاء أثرها المالي وإرجاع المبالغ للخزنة والدين.")) return;
+
+            db.ref(`debts/${debtId}`).once('value').then(snap => {
+                if (!snap.exists()) return;
+                let d = snap.val();
+                let updates = {};
+
+                updates[`debt_transactions/${trKey}`] = null;
+
+                let numAmount = Number(amount);
+                let now = new Date();
+                let timestamp = now.toLocaleString('ar-EG');
+                let isoDate = now.toISOString();
+
+                let treasuryRef = db.ref('treasury_logs').push().key;
+                if (actionType === 'تسليم (سداد)') {
+                    updates[`treasury_logs/${treasuryRef}`] = {
+                        isoDate, timestamp, type: 'إيداع', amount: numAmount, method: 'كاش', note: `إلغاء حركة تسليم للدائن (${d.name})`
+                    };
+                    if (d.type === 'فائدة') {
+                        if (deductType === 'من أصل المبلغ') {
+                            updates[`debts/${debtId}/principal`] = firebase.database.ServerValue.increment(numAmount);
+                        }
+                    } else {
+                        updates[`debts/${debtId}/paidAmount`] = firebase.database.ServerValue.increment(-numAmount);
+                    }
+                } else {
+                    updates[`treasury_logs/${treasuryRef}`] = {
+                        isoDate, timestamp, type: 'سحب', amount: numAmount, method: 'كاش', note: `إلغاء حركة استلام من الدائن (${d.name})`
+                    };
+                    if (d.type === 'فائدة') {
+                        updates[`debts/${debtId}/principal`] = firebase.database.ServerValue.increment(-numAmount);
+                    } else {
+                        updates[`debts/${debtId}/paidAmount`] = firebase.database.ServerValue.increment(numAmount);
+                    }
+                }
+
+                db.ref().update(updates).then(() => {
+                    alert("تم حذف الحركة وإلغاء التأثير المالي بنجاح!");
+                    openDebtAccountDetails(debtId);
+                    updateSecretTickerData();
+                });
+            });
+        }
+
+        function exportDebtAccountPDF(creditorName) {
+            let element = document.getElementById('debtPdfPrintArea');
+            let opt = { margin: 10, filename: `كشف_حساب_الدائن_${creditorName}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- الجمعيات ---
+        function saveOrUpdateAssociation(e) {
+            e.preventDefault();
+            const id = document.getElementById('assocId').value;
+            const data = {
+                name: document.getElementById('assocName').value,
+                phone: document.getElementById('assocPhone').value,
+                totalRounds: Number(document.getElementById('assocTotalRounds').value),
+                myRounds: document.getElementById('assocMyRounds').value,
+                installment: Number(document.getElementById('assocInstallment').value),
+                payoutAmount: Number(document.getElementById('assocPayoutAmount').value),
+                dueDate: document.getElementById('assocDueDate').value
+            };
+
+            if (id) {
+                db.ref(`associations/${id}`).update(data).then(() => {
+                    alert('تم تعديل بيانات الجمعية بنجاح');
+                    resetAssociationForm();
+                    updateSecretTickerData();
+                });
+            } else {
+                data.paidRoundsCount = 0;
+                db.ref('associations').push(data).then(() => {
+                    alert('تم تسجيل الجمعية بنجاح');
+                    resetAssociationForm();
+                    updateSecretTickerData();
+                });
+            }
+        }
+
+        function editAssociation(id) {
+            db.ref(`associations/${id}`).once('value').then(snapshot => {
+                if (!snapshot.exists()) return;
+                let a = snapshot.val();
+                document.getElementById('assocId').value = id;
+                document.getElementById('assocName').value = a.name || '';
+                document.getElementById('assocPhone').value = a.phone || '';
+                document.getElementById('assocTotalRounds').value = a.totalRounds || '';
+                document.getElementById('assocMyRounds').value = a.myRounds || '';
+                document.getElementById('assocInstallment').value = a.installment || '';
+                document.getElementById('assocPayoutAmount').value = a.payoutAmount || '';
+                document.getElementById('assocDueDate').value = a.dueDate || '';
+
+                document.getElementById('assocFormTitle').innerText = 'تعديل بيانات الجمعية';
+                document.getElementById('assocSubmitBtn').innerText = 'تحديث الجمعية';
+                document.getElementById('assocCancelBtn').style.display = 'block';
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
+        }
+
+        function resetAssociationForm() {
+            document.getElementById('assocForm').reset();
+            document.getElementById('assocId').value = '';
+            document.getElementById('assocFormTitle').innerText = 'تسجيل جمعية جديدة';
+            document.getElementById('assocSubmitBtn').innerText = 'حفظ الجمعية';
+            document.getElementById('assocCancelBtn').style.display = 'none';
+        }
+
+        function deleteAssociation(id) {
+            if (confirm('هل أنت متأكد من الحذف؟')) db.ref(`associations/${id}`).remove().then(() => { alert('تم الحذف'); updateSecretTickerData(); });
+        }
+
+        function loadAssociationsList() {
+            db.ref('associations').on('value', snapshot => {
+                let html = '<table><tr><th>الجمعية</th><th>القسط</th><th>المدفوع</th><th>تحكم وسداد</th></tr>';
+                if (!snapshot.exists()) { html += '<tr><td colspan="4" style="text-align:center;">لا توجد جمعيات</td></tr>'; }
+                else {
+                    snapshot.forEach(child => {
+                        let a = child.val(); let id = child.key;
+                        html += `<tr>
+                            <td onclick="openAssociationDetails('${id}')" style="cursor:pointer; color:var(--primary); font-weight:bold;">${a.name}<br><small style="color:var(--gray)">${a.phone}</small></td>
+                            <td>${a.installment} ج.م</td>
+                            <td>${a.paidRoundsCount || 0} من ${a.totalRounds}</td>
+                            <td>
+                                <button class="btn-share btn-sm" onclick="generateShareLink('assoc', '${id}')">مشاركة 🔗</button>
+                                <button class="btn-success btn-sm" onclick="payAssocInstallmentDirect('${id}', ${a.installment})">سداد 💵</button>
+                                <button class="btn-info btn-sm" onclick="editAssociation('${id}')">تعديل</button>
+                                <button class="btn-danger btn-sm" onclick="deleteAssociation('${id}')">حذف</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                html += '</table>';
+                document.getElementById('associationsList').innerHTML = html;
+            });
+        }
+
+        function payAssocInstallmentDirect(assocId, defaultInstallment) {
+            let amount = prompt("مبلغ قسط الجمعية المراد سداده:", defaultInstallment);
+            if (!amount) return;
+            let method = prompt("طريقة الدفع (كاش / فودافون كاش / انستا باي):", "فودافون كاش");
+            if (!method) return;
+            let receiptImg = prompt("رابط صورة السكرين (اختياري):");
+            let receiptImages = receiptImg ? [receiptImg] : [];
+
+            let now = new Date();
+            let timestamp = now.toLocaleString('ar-EG');
+            let isoDate = now.toISOString();
+            let updates = {};
+            
+            let payRef = db.ref('assoc_payments').push().key;
+            updates[`assoc_payments/${payRef}`] = { assocId, timestamp, amount: Number(amount), method, receiptImages };
+            updates[`associations/${assocId}/paidRoundsCount`] = firebase.database.ServerValue.increment(1);
+            
+            let treasuryRef = db.ref('treasury_logs').push().key;
+            updates[`treasury_logs/${treasuryRef}`] = {
+                isoDate, timestamp, type: 'سحب', amount: Number(amount), method, note: `سداد قسط جمعية`, receiptImages
+            };
+
+            db.ref().update(updates).then(() => {
+                alert('تم تسجيل سداد القسط وزيادة عدد الأدوار والخصم من الخزنة بنجاح!');
+                updateSecretTickerData();
+            });
+        }
+
+        function openAssociationDetails(assocId) {
+            document.getElementById('detailModal').style.display = 'flex';
+            db.ref(`associations/${assocId}`).once('value', assocSnap => {
+                let a = assocSnap.val();
+                document.getElementById('modalTitle').innerText = `تفاصيل جمعية: ${a.name}`;
+                let paidCount = a.paidRoundsCount || 0;
+                let remainingRounds = a.totalRounds - paidCount;
+                let totalPaidMoney = paidCount * a.installment;
+
+                db.ref('assoc_payments').orderByChild('assocId').equalTo(assocId).once('value', paymentsSnap => {
+                    let paymentsHtml = '<h4>سجل أقساط الجمعية المدفوعة:</h4><table><tr><th>التاريخ</th><th>المبلغ والطريقة</th><th>صورة السكرين</th></tr>';
+                    if (!paymentsSnap.exists()) {
+                        paymentsHtml += '<tr><td colspan="3" style="text-align:center;">لا توجد أقساط مدفوعة حتّى الآن</td></tr>';
+                    } else {
+                        paymentsSnap.forEach(p => {
+                            let pay = p.val();
+                            let images = pay.receiptImages || (pay.receiptImg ? [pay.receiptImg] : []);
+                            let imgBtn = images.length > 0 ? `<button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})'>عرض الصور (${images.length}) 🖼️</button>` : '-';
+                            paymentsHtml += `<tr><td>${pay.timestamp}</td><td style="color:var(--success);">${pay.amount} ج.م (${pay.method})</td><td>${imgBtn}</td></tr>`;
+                        });
+                    }
+                    paymentsHtml += '</table>';
+
+                    let html = `
+                        <div class="btn-group" style="margin-bottom: 12px;">
+                            <button class="btn-share" onclick="generateShareLink('assoc', '${assocId}')">نسخ رابط المشاركة للجمعية 🔗</button>
+                        </div>
+                        <div class="detail-row"><span>صاحب الجمعية / الموبايل:</span> <strong>${a.name} (${a.phone})</strong></div>
+                        <div class="detail-row"><span>عدد أدوار الجمعية:</span> <strong>${a.totalRounds} شهور</strong></div>
+                        <div class="detail-row"><span>أدوار قبضنا المفضلة:</span> <strong style="color:var(--primary);">${a.myRounds}</strong></div>
+                        <div class="detail-row"><span>مبلغ القبض لكل دور:</span> <strong>${a.payoutAmount} ج.م</strong></div>
+                        <div class="detail-row"><span>القسط الشهري:</span> <strong>${a.installment} ج.م (يوم ${a.dueDate} شهرياً)</strong></div>
+                        <hr style="border-color:#444; margin:10px 0;">
+                        <div class="detail-row"><span>الأدوار المدفوعة:</span> <strong style="color:var(--success);">${paidCount} دور (${totalPaidMoney} ج.م)</strong></div>
+                        <div class="detail-row"><span>الأدوار المتبقية:</span> <strong style="color:var(--danger);">${remainingRounds} دور</strong></div>
+                        <button class="btn-success" onclick="payAssocInstallmentDirect('${assocId}', ${a.installment})" style="margin: 15px 0;">دفع قسط شهر جديد</button>
+                        ${paymentsHtml}
+                    `;
+                    document.getElementById('modalBody').innerHTML = html;
+                });
+            });
+        }
+
+        // --- الخزنة والمسحوبات المخصصة مع ربط الحذف التلقائي للسائق ---
+        function openWithdrawalModal() {
+            document.getElementById('wAmount').value = '';
+            document.getElementById('wNote').value = '';
+            document.getElementById('wReceiptImgFile').value = '';
+            document.getElementById('wCategory').value = 'عام';
+            toggleWithdrawCategoryFields();
+            document.getElementById('withdrawModal').style.display = 'flex';
+        }
+
+        function toggleWithdrawCategoryFields() {
+            let cat = document.getElementById('wCategory').value;
+            document.getElementById('wDriverGroup').style.display = (cat === 'سائق') ? 'block' : 'none';
+            document.getElementById('wCarGroup').style.display = 'none';
+        }
+
+        async function executeCustomWithdrawal(e) {
+            e.preventDefault();
+            let cat = document.getElementById('wCategory').value;
+            let amount = Number(document.getElementById('wAmount').value);
+            let method = document.getElementById('wMethod').value;
+            let note = document.getElementById('wNote').value;
+
+            if (amount <= 0) { alert('يرجى كتابة مبلغ صحيح'); return; }
+
+            let receiptImages = await filesToMultipleBase64('wReceiptImgFile');
+
+            let now = new Date();
+            let timestamp = now.toLocaleString('ar-EG');
+            let isoDate = now.toISOString();
+            let updates = {};
+
+            let treasuryRef = db.ref('treasury_logs').push().key;
+
+            if (cat === 'عام') {
+                updates[`treasury_logs/${treasuryRef}`] = {
+                    isoDate, timestamp, type: 'سحب', amount, method, note: `سحب عام: ${note}`, receiptImages
+                };
+            } else if (cat === 'سائق') {
+                let driverId = document.getElementById('wDriverId').value;
+                if (!driverId) { alert('يرجى اختيار السائق'); return; }
+                let driverName = driversMap[driverId] || 'سائق';
+
+                let wRef = db.ref('driver_withdrawals').push().key;
+
+                updates[`treasury_logs/${treasuryRef}`] = {
+                    isoDate, timestamp, type: 'سحب', amount, method, note: `مسحوبات/سلفة للسائق (${driverName}) - ${note}`, receiptImages,
+                    relatedDriverId: driverId, relatedWithdrawalId: wRef
+                };
+
+                updates[`driver_withdrawals/${wRef}`] = {
+                    driverId, amount, method, note, timestamp, isoDate, treasuryLogId: treasuryRef, receiptImages
+                };
+
+                updates[`drivers/${driverId}/balance`] = firebase.database.ServerValue.increment(-amount);
+            } else if (cat === 'سيارة') {
+                let carId = document.getElementById('wCarId').value;
+                if (!carId) { alert('يرجى اختيار السيارة'); return; }
+                let carModel = carsMap[carId] || 'سيارة';
+
+                updates[`treasury_logs/${treasuryRef}`] = {
+                    isoDate, timestamp, type: 'سحب', amount, method, note: `صيانة/مصاريف سيارة (${carModel}) - ${note}`, receiptImages
+                };
+
+                let expRef = db.ref('car_expenses').push().key;
+                updates[`car_expenses/${expRef}`] = {
+                    carId, amount, method, note, timestamp, isoDate, treasuryLogId: treasuryRef, receiptImages
+                };
+            }
+
+            db.ref().update(updates).then(() => {
+                alert('تم تسجيل عملية السحب والخصم بنجاح!');
+                closeModal('withdrawModal');
+                updateSecretTickerData();
+            });
+        }
+
+        async function manualTreasuryAction(type) {
+            if (type === 'سحب') {
+                openWithdrawalModal();
+                return;
+            }
+            let amount = prompt(`أدخل مبلغ الـ ${type}:`, "1000");
+            if (!amount) return;
+            let method = prompt("طريقة الدفع (كاش / فودافون كاش / انستا باي):", "كاش");
+            if (!method) return;
+            let note = prompt("البيان:", "إيداع يدوي للخزنة");
+            if (!note) return;
+            let receiptImg = prompt("رابط صورة السكرين (اختياري - أو اتركها فارغة):");
+            let receiptImages = receiptImg ? [receiptImg] : [];
+
+            let now = new Date();
+            let timestamp = now.toLocaleString('ar-EG');
+            let isoDate = now.toISOString();
+
+            db.ref('treasury_logs').push({ isoDate, timestamp, type, amount: Number(amount), method, note, receiptImages }).then(() => {
+                alert(`تم الـ ${type} بنجاح!`);
+                updateSecretTickerData();
+            });
+        }
+
+        function deleteTreasuryLog(logKey) {
+            if (confirm("هل أنت متأكد من حذف هذه الحركة مباشرة من الخزنة؟ سيتم إلغاء أثرها تماماً (وإذا كانت سلفة سائق سيتم حذفها من حسابه ورصيده تلقائياً).")) {
+                db.ref(`treasury_logs/${logKey}`).once('value').then(snapshot => {
+                    if (!snapshot.exists()) return;
+                    let log = snapshot.val();
+                    let updates = {};
+
+                    updates[`treasury_logs/${logKey}`] = null;
+
+                    if (log.relatedDriverId && log.relatedWithdrawalId) {
+                        updates[`driver_withdrawals/${log.relatedWithdrawalId}`] = null;
+                        updates[`drivers/${log.relatedDriverId}/balance`] = firebase.database.ServerValue.increment(Number(log.amount));
+                    }
+
+                    db.ref().update(updates).then(() => {
+                        alert("تم حذف حركة الخزنة وإلغاء أثرها المالي من حساب السائق بنجاح!");
+                        updateSecretTickerData();
+                    });
+                });
+            }
+        }
+
+        function filterTreasuryByMethod(method) {
+            currentTreasuryFilter = method;
+            document.getElementById('treasuryLogTitle').innerText = `سجل حركات الخزنة (طريقة الدفع: ${method})`;
+            loadTreasuryData();
+        }
+
+        function loadTreasuryData() {
+            db.ref('treasury_logs').on('value', snapshot => {
+                let totalIncome = 0; let totalExpenses = 0; 
+                let cashTotal = 0; let vodafoneTotal = 0; let instapayTotal = 0;
+                let html = '';
+
+                snapshot.forEach(child => {
+                    let log = child.val();
+                    let key = child.key;
+                    let amt = Number(log.amount || 0);
+                    let m = log.method || 'كاش';
+
+                    if (log.type === 'إيداع') {
+                        totalIncome += amt;
+                        if (m.includes('فودافون')) vodafoneTotal += amt;
+                        else if (m.includes('انستا')) instapayTotal += amt;
+                        else cashTotal += amt;
+                    } else {
+                        totalExpenses += amt;
+                        if (m.includes('فودافون')) vodafoneTotal -= amt;
+                        else if (m.includes('انستا')) instapayTotal -= amt;
+                        else cashTotal -= amt;
+                    }
+
+                    if (currentTreasuryFilter === 'الكل' || m === currentTreasuryFilter || (currentTreasuryFilter === 'كاش' && m === 'كاش')) {
+                        let images = log.receiptImages || (log.receiptImg ? [log.receiptImg] : []);
+                        let imgBtn = images.length > 0 ? `<button class="btn-info btn-sm" onclick='showMultipleImageViewer(${JSON.stringify(images)})'>عرض (${images.length}) 🖼️</button>` : '-';
+                        let rowColor = log.type === 'إيداع' ? 'var(--success)' : 'var(--danger)';
+                        
+                        html = `<tr>
+                            <td>${log.timestamp}</td>
+                            <td style="color:${rowColor}; font-weight:bold;">${log.type}</td>
+                            <td>${log.amount} ج.م<br><small style="color:var(--primary)">${m}</small></td>
+                            <td>${log.note || ''}</td>
+                            <td>${imgBtn}</td>
+                            <td><button class="btn-danger btn-sm" onclick="deleteTreasuryLog('${key}')">حذف 🗑️</button></td>
+                        </tr>` + html;
+                    }
+                });
+
+                if (!snapshot.exists()) html = '<tr><td colspan="6" style="text-align: center;">لا توجد حركات</td></tr>';
+                
+                let overallBalance = totalIncome - totalExpenses;
+
+                document.getElementById('trTotalIncome').innerText = totalIncome + ' ج.م';
+                document.getElementById('trTotalExpenses').innerText = totalExpenses + ' ج.م';
+                document.getElementById('trTotalOverallBalance').innerText = overallBalance + ' ج.م';
+                document.getElementById('trBalance').innerText = overallBalance + ' ج.م';
+                
+                document.getElementById('methodCash').innerText = cashTotal + ' ج.م';
+                document.getElementById('methodVodafone').innerText = vodafoneTotal + ' ج.م';
+                document.getElementById('methodInstapay').innerText = instapayTotal + ' ج.م';
+
+                document.getElementById('treasuryLogTable').innerHTML = html;
+            });
+        }
+    </script>
+</body>
+</html>
