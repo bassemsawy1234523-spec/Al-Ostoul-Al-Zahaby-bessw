@@ -496,7 +496,8 @@
                 <span>إجمالي الرصيد (المتبقي بجميع طرق الدفع)</span>
                 <strong id="trTotalOverallBalance">0.00</strong>
             </div>
-    <div class="card">
+
+            <div class="card">
                 <h2>توزيع الخزنة حسب طرق الدفع (اضغط على الطريقة لعرض الحركات والصور)</h2>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
                     <div class="stat-box" onclick="filterTreasuryByMethod('كاش')">
@@ -2367,7 +2368,7 @@
         function toggleWithdrawCategoryFields() {
             let cat = document.getElementById('wCategory').value;
             document.getElementById('wDriverGroup').style.display = (cat === 'سائق') ? 'block' : 'none';
-            document.getElementById('wCarGroup').style.display = 'none';
+            document.getElementById('wCarGroup').style.display = (cat === 'سيارة') ? 'block' : 'none';
         }
 
         async function executeCustomWithdrawal(e) {
@@ -2411,7 +2412,7 @@
                 updates[`drivers/${driverId}/balance`] = firebase.database.ServerValue.increment(-amount);
             } else if (cat === 'سيارة') {
                 let carId = document.getElementById('wCarId').value;
-                if (!carId) { alert('يرجى اختيار السيارة'); return; }
+                if (!carId) { alert('يرجى اختيار السيارة أولاً'); return; }
                 let carModel = carsMap[carId] || 'سيارة';
 
                 updates[`treasury_logs/${treasuryRef}`] = {
